@@ -9,9 +9,10 @@ export interface Player {
 
 export interface GameConfig {
   players: Player[];
-  timePerRound: number; // em segundos
+  timePerRound: number; // 0 = sem timer
   voiceEnabled: boolean;
   examplesEnabled: boolean;
+  noTimer: boolean;
 }
 
 // ─── Exemplos por categoria ────────────────────────────────────────────────
@@ -36,7 +37,7 @@ export interface Category {
 
 // ─── Estado do jogo ────────────────────────────────────────────────────────
 
-export type GamePhase = 'announcing' | 'playing' | 'scoring' | 'finished';
+export type GamePhase = 'countdown' | 'announcing' | 'playing' | 'paused' | 'scoring' | 'finished';
 export type AppScreen = 'setup' | 'game' | 'results' | 'stats';
 
 export interface GameState {
@@ -46,11 +47,11 @@ export interface GameState {
   currentCategory: CategoryKey;
   currentPlayerIndex: number;
   round: number;
-  scores: Record<string, number>; // playerId → pontuação
+  scores: Record<string, number>;
   phase: GamePhase;
   timeRemaining: number;
-  usedLetters: string[];        // letras já jogadas
-  remainingLetters: string[];   // letras ainda disponíveis
+  usedLetters: string[];
+  remainingLetters: string[];
 }
 
 // ─── Estatísticas persistidas ──────────────────────────────────────────────
@@ -65,9 +66,9 @@ export interface PlayerStats {
 
 export interface AppStats {
   gamesPlayed: number;
-  players: Record<string, PlayerStats>; // playerName → stats
+  players: Record<string, PlayerStats>;
   lettersUsed: string[];
-  lastPlayed: string | null; // ISO date
+  lastPlayed: string | null;
 }
 
 // ─── Definições persistidas ────────────────────────────────────────────────
@@ -77,15 +78,20 @@ export interface AppSettings {
   voiceEnabled: boolean;
   examplesEnabled: boolean;
   defaultTime: number;
+  noTimer: boolean;
 }
 
 // ─── Actions do Reducer ────────────────────────────────────────────────────
 
 export type GameAction =
   | { type: 'START_GAME'; payload: GameConfig }
+  | { type: 'START_COUNTDOWN' }
   | { type: 'START_PLAYING' }
   | { type: 'TICK' }
+  | { type: 'PAUSE' }
+  | { type: 'RESUME' }
   | { type: 'START_SCORING' }
+  | { type: 'SKIP_LETTER' }
   | { type: 'ADD_POINT'; payload: { playerId: string } }
   | { type: 'REMOVE_POINT'; payload: { playerId: string } }
   | { type: 'NEXT_ROUND' }

@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   voiceEnabled: true,
   examplesEnabled: true,
   defaultTime: 60,
+  noTimer: false,
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────

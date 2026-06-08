@@ -9,18 +9,13 @@ import type { GameState, GameAction, GameConfig, CategoryKey } from '@/types';
 import { ALPHABET_PT, pickRandomLetter, removeLetter } from '@/utils/alphabet';
 import { loadSettings } from '@/services/storageService';
 
-// ─── Categorias disponíveis ────────────────────────────────────────────────
-
 const ALL_CATEGORIES: CategoryKey[] = ['pais', 'nome', 'cor', 'animal', 'objeto'];
 
 function pickRandomCategory(): CategoryKey {
   return ALL_CATEGORIES[Math.floor(Math.random() * ALL_CATEGORIES.length)];
 }
 
-// ─── Estado inicial ────────────────────────────────────────────────────────
-
 const settings = loadSettings();
-
 const firstLetter = pickRandomLetter(ALPHABET_PT);
 
 const INITIAL_STATE: GameState = {
@@ -30,19 +25,18 @@ const INITIAL_STATE: GameState = {
     timePerRound: settings.defaultTime,
     voiceEnabled: settings.voiceEnabled,
     examplesEnabled: settings.examplesEnabled,
+    noTimer: settings.noTimer ?? false,
   },
   currentLetter: firstLetter,
   currentCategory: pickRandomCategory(),
   currentPlayerIndex: 0,
   round: 1,
   scores: {},
-  phase: 'announcing',
+  phase: 'countdown',
   timeRemaining: settings.defaultTime,
   usedLetters: [],
   remainingLetters: ALPHABET_PT,
 };
-
-// ─── Reducer ───────────────────────────────────────────────────────────────
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -51,10 +45,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const config: GameConfig = action.payload;
       const scores: Record<string, number> = {};
       for (const p of config.players) scores[p.id] = 0;
-
       const firstLetter = pickRandomLetter(ALPHABET_PT);
       const remaining = removeLetter(ALPHABET_PT, firstLetter);
-
       return {
         ...state,
         screen: 'game',
@@ -64,37 +56,68 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         currentPlayerIndex: 0,
         round: 1,
         scores,
-        phase: 'announcing',
+        phase: 'countdown',
         timeRemaining: config.timePerRound,
         usedLetters: [firstLetter],
         remainingLetters: remaining,
       };
     }
 
+    case 'START_COUNTDOWN': {
+      return { ...state, phase: 'countdown' };
+    }
+
     case 'START_PLAYING': {
+      return { ...state, phase: 'playing' };
+    }
+
+    case 'PAUSE': {
+      if (state.phase !== 'playing') return state;
+      return { ...state, phase: 'paused' };
+    }
+
+    case 'RESUME': {
+      if (state.phase !== 'paused') return state;
       return { ...state, phase: 'playing' };
     }
 
     case 'TICK': {
       if (state.phase !== 'playing') return state;
       const next = state.timeRemaining - 1;
-      if (next <= 0) {
-        return { ...state, timeRemaining: 0, phase: 'scoring' };
-      }
+      if (next <= 0) return { ...state, timeRemaining: 0, phase: 'scoring' };
       return { ...state, timeRemaining: next };
     }
+
     case 'START_SCORING': {
       return { ...state, phase: 'scoring', timeRemaining: 0 };
+    }
+
+    case 'SKIP_LETTER': {
+      // Salta a letra actual sem pontuar — avança para a próxima
+      if (state.remainingLetters.length === 0) {
+        return { ...state, phase: 'finished', screen: 'results' };
+      }
+      const nextLetter = pickRandomLetter(state.remainingLetters);
+      const newRemaining = removeLetter(state.remainingLetters, nextLetter);
+      const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.config.players.length;
+      return {
+        ...state,
+        currentLetter: nextLetter,
+        currentCategory: pickRandomCategory(),
+        currentPlayerIndex: nextPlayerIndex,
+        round: state.round + 1,
+        phase: 'countdown',
+        timeRemaining: state.config.timePerRound,
+        usedLetters: [...state.usedLetters, nextLetter],
+        remainingLetters: newRemaining,
+      };
     }
 
     case 'ADD_POINT': {
       const { playerId } = action.payload;
       return {
         ...state,
-        scores: {
-          ...state.scores,
-          [playerId]: (state.scores[playerId] ?? 0) + 1,
-        },
+        scores: { ...state.scores, [playerId]: (state.scores[playerId] ?? 0) + 1 },
       };
     }
 
@@ -102,31 +125,24 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const { playerId } = action.payload;
       return {
         ...state,
-        scores: {
-          ...state.scores,
-          [playerId]: Math.max(0, (state.scores[playerId] ?? 0) - 1),
-        },
+        scores: { ...state.scores, [playerId]: Math.max(0, (state.scores[playerId] ?? 0) - 1) },
       };
     }
 
     case 'NEXT_ROUND': {
-      // Se não há mais letras disponíveis, terminar
       if (state.remainingLetters.length === 0) {
         return { ...state, phase: 'finished', screen: 'results' };
       }
-
       const nextLetter = pickRandomLetter(state.remainingLetters);
       const newRemaining = removeLetter(state.remainingLetters, nextLetter);
-      const nextPlayerIndex =
-        (state.currentPlayerIndex + 1) % state.config.players.length;
-
+      const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.config.players.length;
       return {
         ...state,
         currentLetter: nextLetter,
         currentCategory: pickRandomCategory(),
         currentPlayerIndex: nextPlayerIndex,
         round: state.round + 1,
-        phase: 'announcing',
+        phase: 'countdown',
         timeRemaining: state.config.timePerRound,
         usedLetters: [...state.usedLetters, nextLetter],
         remainingLetters: newRemaining,
@@ -146,6 +162,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         currentCategory: pickRandomCategory(),
         remainingLetters: removeLetter(ALPHABET_PT, firstLetter),
         usedLetters: [firstLetter],
+        phase: 'countdown',
       };
     }
 
@@ -166,8 +183,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return state;
   }
 }
-
-// ─── Context ───────────────────────────────────────────────────────────────
 
 interface GameContextValue {
   state: GameState;

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { TOTAL_LETTERS } from '@/utils/alphabet';
 import { LetterDisplay } from './LetterDisplay';
@@ -6,6 +6,7 @@ import { TimerBar } from './TimerBar';
 import { PlayerPanel } from './PlayerPanel';
 import { CategoryDisplay } from './CategoryDisplay';
 import { ScoreControls } from './ScoreControls';
+import { Countdown } from './Countdown';
 import { Button } from '@/components/ui/Button';
 import { GameMenu } from '@/components/ui/GameMenu';
 import { useSpeech } from '@/hooks/useSpeech';
@@ -17,13 +18,24 @@ import './GameScreen.css';
 export function GameScreen() {
   const { state, dispatch } = useGame();
   const { phase, config, scores, round, usedLetters, remainingLetters } = state;
+  const { noTimer } = useTimer();
 
   useSpeech();
-  useTimer();
 
   const isScoring = phase === 'scoring';
   const isAnnouncing = phase === 'announcing';
+  const isPlaying = phase === 'playing';
+  const isPaused = phase === 'paused';
+  const isCountdown = phase === 'countdown';
   const isLastRound = remainingLetters.length === 0;
+
+  const totalPlayed = usedLetters.length;
+  const progressPct = (totalPlayed / TOTAL_LETTERS) * 100;
+
+  // Quando o countdown termina, avança para 'announcing'
+  const handleCountdownComplete = useCallback(() => {
+    dispatch({ type: 'START_PLAYING' });
+  }, [dispatch]);
 
   function handleNextRound() {
     cancelSpeech();
@@ -40,40 +52,67 @@ export function GameScreen() {
     dispatch({ type: 'START_SCORING' });
   }
 
+  function handleSkipLetter() {
+    cancelSpeech();
+    dispatch({ type: 'SKIP_LETTER' });
+  }
+
+  function handlePause() {
+    dispatch({ type: 'PAUSE' });
+  }
+
+  function handleResume() {
+    dispatch({ type: 'RESUME' });
+  }
+
   useEffect(() => {
     return () => cancelSpeech();
   }, []);
-
-  const totalPlayed = usedLetters.length;
-  const progressPct = (totalPlayed / TOTAL_LETTERS) * 100;
 
   return (
     <div className="game-screen">
       <div className="app-bg" />
 
+      {/* Contagem decrescente */}
+      {isCountdown && <Countdown onComplete={handleCountdownComplete} />}
+
+      {/* Pausa overlay */}
+      {isPaused && (
+        <div className="pause-overlay">
+          <div className="pause-panel animate-scale-in">
+            <div className="pause-icon">⏸</div>
+            <div className="pause-title">Jogo em pausa</div>
+            <Button variant="primary" size="lg" fullWidth onClick={handleResume}>
+              ▶ Continuar
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSkipLetter}>
+              Saltar esta letra
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="game-content">
         <GameMenu />
 
-        {/* Progresso geral */}
+        {/* Progresso */}
         <div className="letter-progress animate-fade-in">
           <div className="letter-progress-bar">
             <div className="letter-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
-          <span className="letter-progress-text">
-            {totalPlayed} / {TOTAL_LETTERS}
-          </span>
+          <span className="letter-progress-text">{totalPlayed} / {TOTAL_LETTERS}</span>
         </div>
 
         {/* Letra */}
         <LetterDisplay letter={state.currentLetter} isAnnouncing={isAnnouncing} />
 
-        {/* Timer */}
-        <TimerBar />
+        {/* Timer (escondido se noTimer) */}
+        {!noTimer && <TimerBar />}
 
         {/* Jogador actual */}
         <PlayerPanel />
 
-        {/* Categoria sorteada */}
+        {/* Categoria */}
         <CategoryDisplay
           categoryKey={state.currentCategory}
           isAnnouncing={isAnnouncing}
@@ -86,10 +125,18 @@ export function GameScreen() {
 
         {/* Acções */}
         <div className="game-actions animate-slide-up" style={{ animationDelay: '300ms' }}>
-          {!isScoring && !isAnnouncing && (
-            <Button variant="ghost" size="sm" onClick={handleSkip}>
-              ⏭ Terminar ronda
-            </Button>
+
+          {isPlaying && (
+            <div className="game-playing-actions">
+              <Button variant="ghost" size="sm" onClick={handleSkip}>
+                ⏭ Terminar ronda
+              </Button>
+              {!noTimer && (
+                <Button variant="ghost" size="sm" onClick={handlePause}>
+                  ⏸ Pausar
+                </Button>
+              )}
+            </div>
           )}
 
           {isScoring && (
@@ -99,6 +146,13 @@ export function GameScreen() {
           )}
 
           {isAnnouncing && (
+            <div className="announcing-hint animate-fade-in">
+              <span className="pulse-dot" />
+              A anunciar…
+            </div>
+          )}
+
+          {isCountdown && (
             <div className="announcing-hint animate-fade-in">
               <span className="pulse-dot" />
               A preparar…

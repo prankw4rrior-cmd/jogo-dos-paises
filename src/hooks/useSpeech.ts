@@ -8,8 +8,8 @@ import {
 } from '@/services/speechService';
 
 /**
- * Anuncia automaticamente a letra e categoria quando phase='announcing'.
- * Quando termina, despacha START_PLAYING para iniciar o timer.
+ * Anuncia a letra quando phase='announcing'.
+ * Após o anúncio, despacha START_PLAYING.
  */
 export function useSpeech() {
   const { state, dispatch } = useGame();
@@ -28,7 +28,6 @@ export function useSpeech() {
       return;
     }
 
-    // Evitar duplo anúncio na mesma letra (React StrictMode)
     if (currentLetterRef.current === currentLetter && hasAnnouncedRef.current) return;
     currentLetterRef.current = currentLetter;
     hasAnnouncedRef.current = true;
@@ -39,11 +38,9 @@ export function useSpeech() {
       if (config.voiceEnabled && isSpeechSupported()) {
         await announceRound(currentLetter);
       } else {
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 400));
       }
-      if (!cancelled) {
-        dispatch({ type: 'START_PLAYING' });
-      }
+      if (!cancelled) dispatch({ type: 'START_PLAYING' });
     };
 
     void run();

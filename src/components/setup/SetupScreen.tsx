@@ -28,6 +28,7 @@ export function SetupScreen() {
   const [timePerRound, setTimePerRound] = useState(settings.defaultTime);
   const [voiceEnabled, setVoiceEnabled] = useState(settings.voiceEnabled);
   const [examplesEnabled, setExamplesEnabled] = useState(settings.examplesEnabled);
+  const [noTimer, setNoTimer] = useState(settings.noTimer ?? false);
   const [error, setError] = useState('');
 
   const speechSupported = isSpeechSupported();
@@ -58,15 +59,14 @@ export function SetupScreen() {
     }
 
     setError('');
-
-    // Guardar preferências
-    saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound });
+    saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound, noTimer });
 
     const config: GameConfig = {
       players: players.map((p) => ({ ...p, name: p.name.trim() })),
       timePerRound,
       voiceEnabled: voiceEnabled && speechSupported,
       examplesEnabled,
+      noTimer,
     };
 
     dispatch({ type: 'START_GAME', payload: config });
@@ -93,7 +93,6 @@ export function SetupScreen() {
               <p className="section-desc">{players.length} de 8 jogadores</p>
             </div>
           </div>
-
           <div className="players-list">
             {players.map((player, i) => (
               <PlayerInput
@@ -106,7 +105,6 @@ export function SetupScreen() {
               />
             ))}
           </div>
-
           {players.length < 8 && (
             <button className="add-player-btn" onClick={handleAddPlayer}>
               <span>+</span> Adicionar jogador
@@ -120,10 +118,10 @@ export function SetupScreen() {
             <span className="section-icon">⏱️</span>
             <div>
               <h2 className="section-title">Tempo por ronda</h2>
-              <p className="section-desc">Segundos para cada letra</p>
+              <p className="section-desc">{noTimer ? 'Sem limite de tempo' : 'Segundos para cada letra'}</p>
             </div>
           </div>
-          <TimeSelector value={timePerRound} onChange={setTimePerRound} />
+          {!noTimer && <TimeSelector value={timePerRound} onChange={setTimePerRound} />}
         </Card>
 
         {/* Opções */}
@@ -134,42 +132,39 @@ export function SetupScreen() {
               <h2 className="section-title">Opções</h2>
             </div>
           </div>
-
           <div className="options-list">
+            <Toggle
+              checked={noTimer}
+              onChange={setNoTimer}
+              label="Sem timer"
+              description="Ideal para crianças pequenas"
+            />
+            <div className="option-divider" />
             <Toggle
               checked={voiceEnabled}
               onChange={setVoiceEnabled}
               label="Voz automática"
-              description={
-                speechSupported
-                  ? 'Anuncia a letra e as categorias'
-                  : 'Não suportado neste browser'
-              }
+              description={speechSupported ? 'Anuncia a letra' : 'Não suportado neste browser'}
               disabled={!speechSupported}
             />
             <div className="option-divider" />
             <Toggle
               checked={examplesEnabled}
               onChange={setExamplesEnabled}
-              label="Exemplos automáticos"
-              description="Mostra sugestões para cada letra"
+              label="Exemplos no fim"
+              description="Mostra uma sugestão após cada ronda"
             />
           </div>
         </Card>
 
-        {/* Erro */}
-        {error && (
-          <div className="setup-error animate-slide-up">{error}</div>
-        )}
+        {error && <div className="setup-error animate-slide-up">{error}</div>}
 
-        {/* Botão iniciar */}
         <div className="animate-slide-up" style={{ animationDelay: '240ms' }}>
           <Button variant="primary" size="lg" fullWidth onClick={handleStart}>
             🎮 Iniciar Jogo
           </Button>
         </div>
 
-        {/* Letras decorativas */}
         <div className="setup-decoration" aria-hidden>
           <span>A</span><span>B</span><span>C</span>
         </div>
