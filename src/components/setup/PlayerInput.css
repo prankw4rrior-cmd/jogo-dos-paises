@@ -1,0 +1,63 @@
+.player-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.player-name-input {
+  flex: 1;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 15px;
+  transition: all var(--transition);
+}
+
+.player-name-input:focus {
+  border-color: var(--player-color, var(--accent));
+  background: var(--bg-glass-hover);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--player-color, var(--accent)) 20%, transparent);
+}
+
+.player-name-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.player-remove-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--danger-bg);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  color: var(--danger);
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.player-remove-btn:hover {
+  background: rgba(248, 113, 113, 0.25);
+}

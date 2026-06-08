@@ -1,0 +1,121 @@
+.game-menu-btn {
+  position: fixed;
+  top: calc(var(--safe-top) + 12px);
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1;
+  padding-bottom: 3px;
+}
+
+.game-menu-btn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+
+.game-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 16px calc(var(--safe-bottom) + 16px);
+}
+
+.game-menu-panel {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-menu-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+.game-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-body);
+}
+
+.game-menu-item:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-active);
+}
+
+.game-menu-item-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.game-menu-item-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.game-menu-item-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.game-menu-cancel {
+  padding: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-align: center;
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 4px;
+}
+
+.game-menu-cancel:hover {
+  color: var(--text-primary);
+  background: var(--bg-glass);
+}

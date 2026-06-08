@@ -1,0 +1,25 @@
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-svg {
+  display: block;
+}
+
+.logo-sm .logo-svg { width: 120px; height: 43px; }
+.logo-md .logo-svg { width: 180px; height: 64px; }
+.logo-lg .logo-svg { width: 240px; height: 86px; }
+
+.logo-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.logo-sm .logo-name { font-size: 14px; }
+.logo-md .logo-name { font-size: 18px; }
+.logo-lg .logo-name { font-size: 24px; }

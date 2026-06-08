@@ -1,0 +1,66 @@
+.time-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.time-preset-btn {
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.time-preset-btn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+
+.time-preset-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  box-shadow: var(--shadow-accent);
+}
+
+.time-custom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-custom-input {
+  width: 90px;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font-body);
+  text-align: center;
+}
+
+.time-custom-input::-webkit-inner-spin-button,
+.time-custom-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+.time-custom-unit {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}

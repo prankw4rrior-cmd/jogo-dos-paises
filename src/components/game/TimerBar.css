@@ -1,0 +1,54 @@
+.timer-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timer-track {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s linear, background-color 500ms ease;
+}
+
+.timer-ok .timer-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+}
+
+.timer-warning .timer-fill {
+  background: linear-gradient(90deg, var(--warning), #f59e0b);
+}
+
+.timer-danger .timer-fill {
+  background: linear-gradient(90deg, var(--danger), #ef4444);
+}
+
+.timer-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  min-width: 52px;
+  text-align: right;
+  transition: color 300ms;
+}
+
+.timer-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-left: 2px;
+}
+
+.timer-value-danger {
+  color: var(--danger);
+  animation: timerDanger 0.5s ease-in-out infinite;
+}

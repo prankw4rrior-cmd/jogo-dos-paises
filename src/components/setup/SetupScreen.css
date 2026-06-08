@@ -1,0 +1,153 @@
+.setup-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  padding-top: var(--safe-top);
+  padding-bottom: calc(var(--safe-bottom) + 24px);
+}
+
+.setup-content {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.setup-header {
+  text-align: center;
+  padding: 16px 0 8px;
+}
+
+.setup-logo {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 16px rgba(108, 99, 255, 0.4));
+}
+
+.setup-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+
+.setup-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Section headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Players list */
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Add player button */
+.add-player-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-glass);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.add-player-btn:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-active);
+  color: var(--accent);
+}
+
+.add-player-btn span {
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* Options */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.option-divider {
+  height: 1px;
+  background: var(--border);
+}
+
+/* Error */
+.setup-error {
+  background: var(--danger-bg);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Decoration */
+.setup-decoration {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  padding: 20px;
+  pointer-events: none;
+  opacity: 0.04;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 80px;
+  color: var(--text-primary);
+  line-height: 1;
+  z-index: 0;
+}
