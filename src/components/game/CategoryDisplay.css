@@ -41,7 +41,7 @@
 .category-display-name {
   font-family: var(--font-display);
   font-size: 36px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--cat-color);
   letter-spacing: -0.02em;
   line-height: 1.1;
