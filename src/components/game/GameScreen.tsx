@@ -8,6 +8,7 @@ import { CategoryDisplay } from './CategoryDisplay';
 import { ScoreControls } from './ScoreControls';
 import { Countdown } from './Countdown';
 import { LetterHistory } from './LetterHistory';
+import { AnswerInput } from './AnswerInput';
 import { Button } from '@/components/ui/Button';
 import { GameMenu } from '@/components/ui/GameMenu';
 import { useSpeech } from '@/hooks/useSpeech';
@@ -118,6 +119,14 @@ export function GameScreen() {
           isScoring={isScoring}
           currentLetter={state.currentLetter}
         />
+
+        {/* Campo de resposta (durante o jogo) */}
+        {isPlaying && (
+          <AnswerInput
+            currentLetter={state.currentLetter}
+            onValidAnswer={() => dispatch({ type: 'ADD_POINT', payload: { playerId: config.players[state.currentPlayerIndex]?.id ?? '' } })}
+          />
+        )}
 
         {/* Pontuações */}
         <ScoreControls />

@@ -1,0 +1,153 @@
+.about-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  padding-top: var(--safe-top);
+  padding-bottom: calc(var(--safe-bottom) + 24px);
+}
+
+.about-content {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.about-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.about-back-btn:hover { background: var(--bg-glass-hover); }
+
+.about-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.about-app-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 28px 20px !important;
+}
+
+.about-app-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.about-app-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.about-version {
+  background: var(--accent);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.about-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+.about-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  width: 100%;
+  justify-content: center;
+}
+
+.about-author strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.about-section-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 4px 0;
+}
+
+.about-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-step {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.about-step-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.about-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.about-step-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.about-step-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
