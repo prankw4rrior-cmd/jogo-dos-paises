@@ -124,6 +124,7 @@ export function GameScreen() {
         {isPlaying && (
           <AnswerInput
             currentLetter={state.currentLetter}
+            currentCategory={state.currentCategory}
             onValidAnswer={() => dispatch({ type: 'ADD_POINT', payload: { playerId: config.players[state.currentPlayerIndex]?.id ?? '' } })}
           />
         )}

@@ -1,22 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { startRecognition, stopRecognition, isRecognitionSupported } from '@/services/recognitionService';
-import { validateWord, startsWithLetter } from '@/services/dictionaryService';
+import { validateAnswer } from '@/services/dictionaryService';
 import { playPoint } from '@/services/soundService';
+import type { CategoryKey } from '@/types';
 import './AnswerInput.css';
 
 interface AnswerInputProps {
   currentLetter: string;
+  currentCategory: CategoryKey;
   onValidAnswer: () => void;
 }
 
-type Status = 'idle' | 'listening' | 'checking' | 'valid' | 'invalid' | 'wrong-letter';
+type Status = 'idle' | 'listening' | 'checking' | 'valid' | 'invalid';
 
-export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) {
+export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: AnswerInputProps) {
   const [answer, setAnswer] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
   const validatedRef = useRef(false);
 
   useEffect(() => {
@@ -24,28 +25,20 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
     setStatus('idle');
     setFeedback('');
     validatedRef.current = false;
-  }, [currentLetter]);
+  }, [currentLetter, currentCategory]);
 
   async function handleValidate(word: string) {
     const trimmed = word.trim();
-    if (!trimmed || validatedRef.current) return;
+    if (!trimmed || validatedRef.current || status === 'checking') return;
 
-    // 1. Verificar letra
-    if (!startsWithLetter(trimmed, currentLetter)) {
-      setStatus('wrong-letter');
-      setFeedback(`✗ "${trimmed}" não começa por ${currentLetter.toUpperCase()}.`);
-      return;
-    }
-
-    // 2. Verificar no dicionário
     setStatus('checking');
-    setFeedback('A verificar no dicionário…');
+    setFeedback('A verificar…');
 
-    const exists = await validateWord(trimmed);
+    const result = await validateAnswer(trimmed, currentLetter, currentCategory);
 
-    if (exists) {
+    if (result.valid) {
       setStatus('valid');
-      setFeedback(`✓ "${trimmed}" é válido!`);
+      setFeedback(`✓ ${result.reason}`);
       if (!validatedRef.current) {
         validatedRef.current = true;
         playPoint();
@@ -53,7 +46,7 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
       }
     } else {
       setStatus('invalid');
-      setFeedback(`✗ "${trimmed}" não foi encontrado no dicionário.`);
+      setFeedback(`✗ ${result.reason}`);
     }
   }
 
@@ -95,7 +88,6 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
   const statusClass = {
     valid: 'answer-valid',
     invalid: 'answer-invalid',
-    'wrong-letter': 'answer-invalid',
     listening: 'answer-listening',
     checking: 'answer-checking',
     idle: '',
@@ -104,7 +96,6 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
   const feedbackClass = {
     valid: 'feedback-ok',
     invalid: 'feedback-err',
-    'wrong-letter': 'feedback-err',
     listening: 'feedback-info',
     checking: 'feedback-info',
     idle: '',
@@ -114,7 +105,6 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
     <div className={`answer-input-wrapper ${statusClass}`}>
       <div className="answer-input-row">
         <input
-          ref={inputRef}
           className="answer-input"
           type="text"
           value={answer}
@@ -125,7 +115,7 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
           onKeyDown={handleKeyDown}
           placeholder={`Palavra com ${currentLetter.toUpperCase()}…`}
           maxLength={40}
-          disabled={listening || status === 'checking'}
+          disabled={listening || status === 'checking' || status === 'valid'}
           autoComplete="off"
           autoCapitalize="none"
         />
@@ -134,7 +124,7 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
           <button
             className={`mic-btn ${listening ? 'mic-active' : ''}`}
             onClick={handleMic}
-            disabled={status === 'checking'}
+            disabled={status === 'checking' || status === 'valid'}
             aria-label={listening ? 'Parar' : 'Microfone'}
           >
             {listening ? '⏹' : '🎤'}
