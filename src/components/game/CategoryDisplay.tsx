@@ -11,11 +11,16 @@ interface CategoryDisplayProps {
 }
 
 const CATEGORY_INFO: Record<CategoryKey, { label: string; emoji: string; color: string }> = {
-  pais:   { label: 'País',   emoji: '🌍', color: '#6c63ff' },
-  nome:   { label: 'Nome',   emoji: '👤', color: '#ff6b9d' },
-  cor:    { label: 'Cor',    emoji: '🎨', color: '#4ade80' },
-  animal: { label: 'Animal', emoji: '🐾', color: '#fbbf24' },
-  objeto: { label: 'Objeto', emoji: '📦', color: '#60a5fa' },
+  pais:      { label: 'País',      emoji: '🌍', color: '#6c63ff' },
+  nome:      { label: 'Nome',      emoji: '👤', color: '#ff6b9d' },
+  cor:       { label: 'Cor',       emoji: '🎨', color: '#4ade80' },
+  animal:    { label: 'Animal',    emoji: '🐾', color: '#fbbf24' },
+  objeto:    { label: 'Objeto',    emoji: '📦', color: '#60a5fa' },
+  fruta:     { label: 'Fruta',     emoji: '🍎', color: '#f87171' },
+  cidade:    { label: 'Cidade',    emoji: '🏙️', color: '#a78bfa' },
+  profissao: { label: 'Profissão', emoji: '💼', color: '#34d399' },
+  marca:     { label: 'Marca',     emoji: '🏷️', color: '#fb923c' },
+  filme:     { label: 'Filme',     emoji: '🎬', color: '#e879f9' },
 };
 
 export function CategoryDisplay({ categoryKey, isAnnouncing, isScoring, currentLetter }: CategoryDisplayProps) {

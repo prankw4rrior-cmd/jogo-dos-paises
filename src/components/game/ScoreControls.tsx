@@ -1,4 +1,5 @@
 import { useGame } from '@/context/GameContext';
+import { playPoint } from '@/services/soundService';
 import './ScoreControls.css';
 
 const PLAYER_COLORS = [
@@ -54,7 +55,7 @@ export function ScoreControls() {
                   <span className="score-player-value">{score}</span>
                   <button
                     className="score-btn score-btn-plus"
-                    onClick={() => dispatch({ type: 'ADD_POINT', payload: { playerId: player.id } })}
+                    onClick={() => { playPoint(); dispatch({ type: 'ADD_POINT', payload: { playerId: player.id } }); }}
                     aria-label={`Adicionar ponto a ${player.name}`}
                   >
                     +

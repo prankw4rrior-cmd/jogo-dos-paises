@@ -4,31 +4,23 @@ export interface Player {
   id: string;
   name: string;
   emoji: string;
+  teamId?: string;
 }
 
-// ─── Configuração ──────────────────────────────────────────────────────────
+// ─── Equipa ────────────────────────────────────────────────────────────────
 
-export interface GameConfig {
-  players: Player[];
-  timePerRound: number; // 0 = sem timer
-  voiceEnabled: boolean;
-  examplesEnabled: boolean;
-  noTimer: boolean;
-}
-
-// ─── Exemplos por categoria ────────────────────────────────────────────────
-
-export interface CategoryExamples {
-  pais: string;
-  nome: string;
-  cor: string;
-  animal: string;
-  objeto: string;
+export interface Team {
+  id: string;
+  name: string;
+  emoji: string;
+  playerIds: string[];
 }
 
 // ─── Categorias ────────────────────────────────────────────────────────────
 
-export type CategoryKey = keyof CategoryExamples;
+export type CategoryKey =
+  | 'pais' | 'nome' | 'cor' | 'animal' | 'objeto'
+  | 'fruta' | 'cidade' | 'profissao' | 'marca' | 'filme';
 
 export interface Category {
   key: CategoryKey;
@@ -36,10 +28,43 @@ export interface Category {
   emoji: string;
 }
 
+export interface CategoryExamples {
+  pais: string;
+  nome: string;
+  cor: string;
+  animal: string;
+  objeto: string;
+  fruta: string;
+  cidade: string;
+  profissao: string;
+  marca: string;
+  filme: string;
+}
+
+// ─── Dificuldade ───────────────────────────────────────────────────────────
+
+export type Difficulty = 'facil' | 'normal' | 'dificil';
+
+// ─── Configuração ──────────────────────────────────────────────────────────
+
+export interface GameConfig {
+  players: Player[];
+  teams: Team[];
+  teamMode: boolean;
+  timePerRound: number;
+  voiceEnabled: boolean;
+  examplesEnabled: boolean;
+  noTimer: boolean;
+  difficulty: Difficulty;
+  selectedCategories: CategoryKey[];
+}
+
 // ─── Estado do jogo ────────────────────────────────────────────────────────
 
 export type GamePhase = 'countdown' | 'announcing' | 'playing' | 'paused' | 'scoring' | 'finished';
 export type AppScreen = 'setup' | 'game' | 'results' | 'stats';
+export type ThemeOption = 'system' | 'light' | 'dark';
+export type AccentColor = 'purple' | 'blue' | 'green' | 'orange' | 'pink';
 
 export interface GameState {
   screen: AppScreen;
@@ -75,11 +100,14 @@ export interface AppStats {
 // ─── Definições persistidas ────────────────────────────────────────────────
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
+  theme: ThemeOption;
+  accentColor: AccentColor;
   voiceEnabled: boolean;
   examplesEnabled: boolean;
   defaultTime: number;
   noTimer: boolean;
+  difficulty: Difficulty;
+  selectedCategories: CategoryKey[];
 }
 
 // ─── Actions do Reducer ────────────────────────────────────────────────────

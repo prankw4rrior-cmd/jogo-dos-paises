@@ -1,34 +1,33 @@
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useEffect,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { GameState, GameAction, GameConfig, CategoryKey } from '@/types';
 import { ALPHABET_PT, pickRandomLetter, removeLetter } from '@/utils/alphabet';
 import { loadSettings } from '@/services/storageService';
 
-const ALL_CATEGORIES: CategoryKey[] = ['pais', 'nome', 'cor', 'animal', 'objeto'];
+const DEFAULT_CATS: CategoryKey[] = ['pais', 'nome', 'cor', 'animal', 'objeto'];
 
-function pickRandomCategory(): CategoryKey {
-  return ALL_CATEGORIES[Math.floor(Math.random() * ALL_CATEGORIES.length)];
+function pickCat(cats: CategoryKey[]): CategoryKey {
+  const pool = cats.length > 0 ? cats : DEFAULT_CATS;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 const settings = loadSettings();
-const firstLetter = pickRandomLetter(ALPHABET_PT);
+const _first = pickRandomLetter(ALPHABET_PT);
 
 const INITIAL_STATE: GameState = {
   screen: 'setup',
   config: {
     players: [],
+    teams: [],
+    teamMode: false,
     timePerRound: settings.defaultTime,
     voiceEnabled: settings.voiceEnabled,
     examplesEnabled: settings.examplesEnabled,
     noTimer: settings.noTimer ?? false,
+    difficulty: settings.difficulty ?? 'normal',
+    selectedCategories: settings.selectedCategories ?? DEFAULT_CATS,
   },
-  currentLetter: firstLetter,
-  currentCategory: pickRandomCategory(),
+  currentLetter: _first,
+  currentCategory: pickCat(settings.selectedCategories ?? DEFAULT_CATS),
   currentPlayerIndex: 0,
   round: 1,
   scores: {},
@@ -39,171 +38,91 @@ const INITIAL_STATE: GameState = {
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
-  switch (action.type) {
+  const cats = state.config.selectedCategories ?? DEFAULT_CATS;
 
+  switch (action.type) {
     case 'START_GAME': {
-      const config: GameConfig = action.payload;
+      const cfg: GameConfig = action.payload;
       const scores: Record<string, number> = {};
-      for (const p of config.players) scores[p.id] = 0;
-      const firstLetter = pickRandomLetter(ALPHABET_PT);
-      const remaining = removeLetter(ALPHABET_PT, firstLetter);
+      for (const p of cfg.players) scores[p.id] = 0;
+      const first = pickRandomLetter(ALPHABET_PT);
       return {
-        ...state,
-        screen: 'game',
-        config,
-        currentLetter: firstLetter,
-        currentCategory: pickRandomCategory(),
-        currentPlayerIndex: 0,
-        round: 1,
-        scores,
-        phase: 'countdown',
-        timeRemaining: config.timePerRound,
-        usedLetters: [firstLetter],
-        remainingLetters: remaining,
+        ...state, screen: 'game', config: cfg,
+        currentLetter: first,
+        currentCategory: pickCat(cfg.selectedCategories),
+        currentPlayerIndex: 0, round: 1, scores,
+        phase: 'countdown', timeRemaining: cfg.timePerRound,
+        usedLetters: [first], remainingLetters: removeLetter(ALPHABET_PT, first),
       };
     }
-
-    case 'START_COUNTDOWN': {
-      return { ...state, phase: 'countdown' };
-    }
-
-    case 'START_PLAYING': {
-      return { ...state, phase: 'playing' };
-    }
-
-    case 'PAUSE': {
-      if (state.phase !== 'playing') return state;
-      return { ...state, phase: 'paused' };
-    }
-
-    case 'RESUME': {
-      if (state.phase !== 'paused') return state;
-      return { ...state, phase: 'playing' };
-    }
-
+    case 'START_COUNTDOWN': return { ...state, phase: 'countdown' };
+    case 'START_PLAYING': return { ...state, phase: 'playing' };
+    case 'PAUSE': return state.phase === 'playing' ? { ...state, phase: 'paused' } : state;
+    case 'RESUME': return state.phase === 'paused' ? { ...state, phase: 'playing' } : state;
     case 'TICK': {
       if (state.phase !== 'playing') return state;
       const next = state.timeRemaining - 1;
-      if (next <= 0) return { ...state, timeRemaining: 0, phase: 'scoring' };
-      return { ...state, timeRemaining: next };
+      return next <= 0 ? { ...state, timeRemaining: 0, phase: 'scoring' } : { ...state, timeRemaining: next };
     }
-
-    case 'START_SCORING': {
-      return { ...state, phase: 'scoring', timeRemaining: 0 };
-    }
-
+    case 'START_SCORING': return { ...state, phase: 'scoring', timeRemaining: 0 };
     case 'SKIP_LETTER': {
-      // Salta a letra actual sem pontuar — avança para a próxima
-      if (state.remainingLetters.length === 0) {
-        return { ...state, phase: 'finished', screen: 'results' };
-      }
-      const nextLetter = pickRandomLetter(state.remainingLetters);
-      const newRemaining = removeLetter(state.remainingLetters, nextLetter);
-      const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.config.players.length;
+      if (state.remainingLetters.length === 0) return { ...state, phase: 'finished', screen: 'results' };
+      const letter = pickRandomLetter(state.remainingLetters);
+      const nextIdx = (state.currentPlayerIndex + 1) % state.config.players.length;
       return {
-        ...state,
-        currentLetter: nextLetter,
-        currentCategory: pickRandomCategory(),
-        currentPlayerIndex: nextPlayerIndex,
-        round: state.round + 1,
-        phase: 'countdown',
-        timeRemaining: state.config.timePerRound,
-        usedLetters: [...state.usedLetters, nextLetter],
-        remainingLetters: newRemaining,
+        ...state, currentLetter: letter,
+        currentCategory: pickCat(cats),
+        currentPlayerIndex: nextIdx, round: state.round + 1,
+        phase: 'countdown', timeRemaining: state.config.timePerRound,
+        usedLetters: [...state.usedLetters, letter],
+        remainingLetters: removeLetter(state.remainingLetters, letter),
       };
     }
-
     case 'ADD_POINT': {
       const { playerId } = action.payload;
-      return {
-        ...state,
-        scores: { ...state.scores, [playerId]: (state.scores[playerId] ?? 0) + 1 },
-      };
+      return { ...state, scores: { ...state.scores, [playerId]: (state.scores[playerId] ?? 0) + 1 } };
     }
-
     case 'REMOVE_POINT': {
       const { playerId } = action.payload;
-      return {
-        ...state,
-        scores: { ...state.scores, [playerId]: Math.max(0, (state.scores[playerId] ?? 0) - 1) },
-      };
+      return { ...state, scores: { ...state.scores, [playerId]: Math.max(0, (state.scores[playerId] ?? 0) - 1) } };
     }
-
     case 'NEXT_ROUND': {
-      if (state.remainingLetters.length === 0) {
-        return { ...state, phase: 'finished', screen: 'results' };
-      }
-      const nextLetter = pickRandomLetter(state.remainingLetters);
-      const newRemaining = removeLetter(state.remainingLetters, nextLetter);
-      const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.config.players.length;
+      if (state.remainingLetters.length === 0) return { ...state, phase: 'finished', screen: 'results' };
+      const letter = pickRandomLetter(state.remainingLetters);
+      const nextIdx = (state.currentPlayerIndex + 1) % state.config.players.length;
       return {
-        ...state,
-        currentLetter: nextLetter,
-        currentCategory: pickRandomCategory(),
-        currentPlayerIndex: nextPlayerIndex,
-        round: state.round + 1,
-        phase: 'countdown',
-        timeRemaining: state.config.timePerRound,
-        usedLetters: [...state.usedLetters, nextLetter],
-        remainingLetters: newRemaining,
+        ...state, currentLetter: letter,
+        currentCategory: pickCat(cats),
+        currentPlayerIndex: nextIdx, round: state.round + 1,
+        phase: 'countdown', timeRemaining: state.config.timePerRound,
+        usedLetters: [...state.usedLetters, letter],
+        remainingLetters: removeLetter(state.remainingLetters, letter),
       };
     }
-
-    case 'END_GAME': {
-      return { ...state, screen: 'results', phase: 'finished' };
-    }
-
+    case 'END_GAME': return { ...state, screen: 'results', phase: 'finished' };
     case 'RESET': {
-      const firstLetter = pickRandomLetter(ALPHABET_PT);
-      return {
-        ...INITIAL_STATE,
-        config: state.config,
-        currentLetter: firstLetter,
-        currentCategory: pickRandomCategory(),
-        remainingLetters: removeLetter(ALPHABET_PT, firstLetter),
-        usedLetters: [firstLetter],
-        phase: 'countdown',
-      };
+      const first = pickRandomLetter(ALPHABET_PT);
+      return { ...INITIAL_STATE, config: state.config, currentLetter: first,
+        currentCategory: pickCat(state.config.selectedCategories),
+        remainingLetters: removeLetter(ALPHABET_PT, first),
+        usedLetters: [first], phase: 'countdown' };
     }
-
-    case 'GO_TO_STATS': {
-      return { ...state, screen: 'stats' };
-    }
-
+    case 'GO_TO_STATS': return { ...state, screen: 'stats' };
     case 'GO_TO_SETUP': {
-      const firstLetter = pickRandomLetter(ALPHABET_PT);
-      return {
-        ...INITIAL_STATE,
-        currentLetter: firstLetter,
-        remainingLetters: removeLetter(ALPHABET_PT, firstLetter),
-      };
+      const first = pickRandomLetter(ALPHABET_PT);
+      return { ...INITIAL_STATE, currentLetter: first, remainingLetters: removeLetter(ALPHABET_PT, first) };
     }
-
-    default:
-      return state;
+    default: return state;
   }
 }
 
-interface GameContextValue {
-  state: GameState;
-  dispatch: React.Dispatch<GameAction>;
-}
-
+interface GameContextValue { state: GameState; dispatch: React.Dispatch<GameAction>; }
 const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, INITIAL_STATE);
-
-  useEffect(() => {
-    const settings = loadSettings();
-    applyTheme(settings.theme);
-  }, []);
-
-  return (
-    <GameContext.Provider value={{ state, dispatch }}>
-      {children}
-    </GameContext.Provider>
-  );
+  useEffect(() => { applyTheme(loadSettings().theme); }, []);
+  return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
 }
 
 export function useGame(): GameContextValue {
@@ -214,10 +133,6 @@ export function useGame(): GameContextValue {
 
 export function applyTheme(theme: 'light' | 'dark' | 'system'): void {
   const root = document.documentElement;
-  if (theme === 'system') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-  } else {
-    root.setAttribute('data-theme', theme);
-  }
+  const dark = theme === 'system' ? window.matchMedia('(prefers-color-scheme: dark)').matches : theme === 'dark';
+  root.setAttribute('data-theme', dark ? 'dark' : 'light');
 }

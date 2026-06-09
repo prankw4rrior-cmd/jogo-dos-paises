@@ -1,0 +1,57 @@
+.theme-selector { display: flex; flex-direction: column; gap: 12px; }
+
+.theme-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.theme-mode-btn {
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-mode-btn:hover { background: var(--bg-glass-hover); color: var(--text-primary); }
+.theme-mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.accent-colors {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.accent-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.accent-dot.active {
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+  transform: scale(1.1);
+}
+
+.accent-check {
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '@/context/GameContext';
+import { playTimeUp, vibrateTimeUp } from '@/services/soundService';
 
 let _display = 0;
 let _listeners: Array<(v: number) => void> = [];
@@ -32,6 +33,8 @@ function startInterval() {
       notifyListeners(0);
       if (!_fired && _dispatchFn) {
         _fired = true;
+        playTimeUp();
+        vibrateTimeUp();
         _dispatchFn({ type: 'START_SCORING' });
       }
     } else {

@@ -7,6 +7,7 @@ import { PlayerPanel } from './PlayerPanel';
 import { CategoryDisplay } from './CategoryDisplay';
 import { ScoreControls } from './ScoreControls';
 import { Countdown } from './Countdown';
+import { LetterHistory } from './LetterHistory';
 import { Button } from '@/components/ui/Button';
 import { GameMenu } from '@/components/ui/GameMenu';
 import { useSpeech } from '@/hooks/useSpeech';
@@ -57,13 +58,8 @@ export function GameScreen() {
     dispatch({ type: 'SKIP_LETTER' });
   }
 
-  function handlePause() {
-    dispatch({ type: 'PAUSE' });
-  }
-
-  function handleResume() {
-    dispatch({ type: 'RESUME' });
-  }
+  function handlePause() { dispatch({ type: 'PAUSE' }); }
+  function handleResume() { dispatch({ type: 'RESUME' }); }
 
   useEffect(() => {
     return () => cancelSpeech();
@@ -105,6 +101,9 @@ export function GameScreen() {
 
         {/* Letra */}
         <LetterDisplay letter={state.currentLetter} isAnnouncing={isAnnouncing} />
+
+        {/* Histórico de letras */}
+        <LetterHistory />
 
         {/* Timer (escondido se noTimer) */}
         {!noTimer && <TimerBar />}
