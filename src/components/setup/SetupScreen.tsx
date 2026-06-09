@@ -13,8 +13,10 @@ import './SetupScreen.css';
 
 let playerIdCounter = 1;
 
-function createPlayer(name: string): Player {
-  return { id: `p${playerIdCounter++}`, name: name.trim() };
+const DEFAULT_EMOJIS = ['😀','😎','🤩','🥳','🦁','🐯','🐻','🦊'];
+
+function createPlayer(name: string, index: number): Player {
+  return { id: `p${playerIdCounter++}`, name: name.trim(), emoji: DEFAULT_EMOJIS[index] ?? '😀' };
 }
 
 export function SetupScreen() {
@@ -22,8 +24,8 @@ export function SetupScreen() {
   const settings = loadSettings();
 
   const [players, setPlayers] = useState<Player[]>([
-    createPlayer('Jogador 1'),
-    createPlayer('Jogador 2'),
+    createPlayer('Jogador 1', 0),
+    createPlayer('Jogador 2', 1),
   ]);
   const [timePerRound, setTimePerRound] = useState(settings.defaultTime);
   const [voiceEnabled, setVoiceEnabled] = useState(settings.voiceEnabled);
@@ -35,34 +37,32 @@ export function SetupScreen() {
 
   function handleAddPlayer() {
     if (players.length >= 8) return;
-    setPlayers((prev) => [...prev, createPlayer(`Jogador ${prev.length + 1}`)]);
+    setPlayers(prev => [...prev, createPlayer(`Jogador ${prev.length + 1}`, prev.length)]);
   }
 
   function handleRemovePlayer(id: string) {
     if (players.length <= 2) return;
-    setPlayers((prev) => prev.filter((p) => p.id !== id));
+    setPlayers(prev => prev.filter(p => p.id !== id));
   }
 
   function handleRenamePlayer(id: string, name: string) {
-    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
+  }
+
+  function handleEmojiChange(id: string, emoji: string) {
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, emoji } : p));
   }
 
   function handleStart() {
-    const names = players.map((p) => p.name.trim());
-    if (names.some((n) => n.length === 0)) {
-      setError('Todos os jogadores precisam de um nome.');
-      return;
-    }
-    if (new Set(names).size !== names.length) {
-      setError('Os nomes dos jogadores devem ser únicos.');
-      return;
-    }
+    const names = players.map(p => p.name.trim());
+    if (names.some(n => n.length === 0)) { setError('Todos os jogadores precisam de um nome.'); return; }
+    if (new Set(names).size !== names.length) { setError('Os nomes dos jogadores devem ser únicos.'); return; }
 
     setError('');
     saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound, noTimer });
 
     const config: GameConfig = {
-      players: players.map((p) => ({ ...p, name: p.name.trim() })),
+      players: players.map(p => ({ ...p, name: p.name.trim() })),
       timePerRound,
       voiceEnabled: voiceEnabled && speechSupported,
       examplesEnabled,
@@ -75,16 +75,14 @@ export function SetupScreen() {
   return (
     <div className="setup-screen">
       <div className="app-bg" />
-
       <div className="setup-content">
-        {/* Header */}
+
         <div className="setup-header animate-slide-up">
           <Logo size="lg" showName={false} />
           <h1 className="setup-title">Letra a Letra</h1>
           <p className="setup-subtitle">Com família e amigos</p>
         </div>
 
-        {/* Jogadores */}
         <Card className="animate-slide-up" style={{ animationDelay: '60ms' }}>
           <div className="section-header">
             <span className="section-icon">👥</span>
@@ -102,6 +100,8 @@ export function SetupScreen() {
                 canRemove={players.length > 2}
                 onRename={handleRenamePlayer}
                 onRemove={handleRemovePlayer}
+                onEmojiChange={handleEmojiChange}
+                emoji={player.emoji}
               />
             ))}
           </div>
@@ -112,7 +112,6 @@ export function SetupScreen() {
           )}
         </Card>
 
-        {/* Tempo */}
         <Card className="animate-slide-up" style={{ animationDelay: '120ms' }}>
           <div className="section-header">
             <span className="section-icon">⏱️</span>
@@ -124,36 +123,19 @@ export function SetupScreen() {
           {!noTimer && <TimeSelector value={timePerRound} onChange={setTimePerRound} />}
         </Card>
 
-        {/* Opções */}
         <Card className="animate-slide-up" style={{ animationDelay: '180ms' }}>
           <div className="section-header">
             <span className="section-icon">⚙️</span>
-            <div>
-              <h2 className="section-title">Opções</h2>
-            </div>
+            <div><h2 className="section-title">Opções</h2></div>
           </div>
           <div className="options-list">
-            <Toggle
-              checked={noTimer}
-              onChange={setNoTimer}
-              label="Sem timer"
-              description="Ideal para crianças pequenas"
-            />
+            <Toggle checked={noTimer} onChange={setNoTimer} label="Sem timer" description="Ideal para crianças pequenas" />
             <div className="option-divider" />
-            <Toggle
-              checked={voiceEnabled}
-              onChange={setVoiceEnabled}
-              label="Voz automática"
+            <Toggle checked={voiceEnabled} onChange={setVoiceEnabled} label="Voz automática"
               description={speechSupported ? 'Anuncia a letra' : 'Não suportado neste browser'}
-              disabled={!speechSupported}
-            />
+              disabled={!speechSupported} />
             <div className="option-divider" />
-            <Toggle
-              checked={examplesEnabled}
-              onChange={setExamplesEnabled}
-              label="Exemplos no fim"
-              description="Mostra uma sugestão após cada ronda"
-            />
+            <Toggle checked={examplesEnabled} onChange={setExamplesEnabled} label="Exemplos no fim" description="Mostra uma sugestão após cada ronda" />
           </div>
         </Card>
 

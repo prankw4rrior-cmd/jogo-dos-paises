@@ -47,7 +47,7 @@ export function Podium({ ranked }: PodiumProps) {
                 className="podium-avatar"
                 style={{ background: `${color}22`, borderColor: `${color}55` }}
               >
-                <span style={{ color }}>{entry.player.name.charAt(0).toUpperCase()}</span>
+                <span style={{ color }}>{entry.player.emoji || entry.player.name.charAt(0).toUpperCase()}</span>
               </div>
               <div className="podium-name">{entry.player.name}</div>
               <div className="podium-score" style={{ color }}>{entry.score} pts</div>

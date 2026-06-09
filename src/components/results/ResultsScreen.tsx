@@ -3,6 +3,7 @@ import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Podium } from './Podium';
 import { ScoreTable } from './ScoreTable';
+import { Confetti } from '@/components/ui/Confetti';
 import { announceWinner, cancelSpeech } from '@/services/speechService';
 import './ResultsScreen.css';
 
@@ -33,6 +34,7 @@ export function ResultsScreen() {
   return (
     <div className="results-screen">
       <div className="app-bg" />
+      <Confetti />
 
       <div className="results-content">
 

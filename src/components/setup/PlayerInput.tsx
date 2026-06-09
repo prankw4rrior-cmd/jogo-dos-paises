@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Player } from '@/types';
 import './PlayerInput.css';
 
@@ -7,6 +8,8 @@ interface PlayerInputProps {
   canRemove: boolean;
   onRename: (id: string, name: string) => void;
   onRemove: (id: string) => void;
+  onEmojiChange: (id: string, emoji: string) => void;
+  emoji: string;
 }
 
 const PLAYER_COLORS = [
@@ -14,13 +17,42 @@ const PLAYER_COLORS = [
   '#60a5fa', '#f87171', '#a78bfa', '#34d399',
 ];
 
-export function PlayerInput({ player, index, canRemove, onRename, onRemove }: PlayerInputProps) {
+const EMOJI_OPTIONS = [
+  '😀','😎','🤩','🥳','🦁','🐯','🐻','🦊',
+  '🐼','🐨','🦄','🐸','🐧','🦋','🌟','⚡',
+  '🎮','🏆','🎯','🚀','👑','🌈','🍕','⚽',
+];
+
+export function PlayerInput({ player, index, canRemove, onRename, onRemove, onEmojiChange, emoji }: PlayerInputProps) {
   const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+  const [showPicker, setShowPicker] = useState(false);
 
   return (
     <div className="player-input-row">
-      <div className="player-avatar" style={{ background: `${color}22`, borderColor: `${color}44` }}>
-        <span style={{ color }}>{player.name.charAt(0).toUpperCase() || '?'}</span>
+      {/* Avatar clicável */}
+      <div className="player-avatar-wrapper">
+        <button
+          className="player-avatar player-avatar-emoji"
+          style={{ background: `${color}22`, borderColor: `${color}44` }}
+          onClick={() => setShowPicker(v => !v)}
+          aria-label="Escolher emoji"
+        >
+          {emoji}
+        </button>
+
+        {showPicker && (
+          <div className="emoji-picker animate-scale-in">
+            {EMOJI_OPTIONS.map(e => (
+              <button
+                key={e}
+                className={`emoji-option ${emoji === e ? 'emoji-selected' : ''}`}
+                onClick={() => { onEmojiChange(player.id, e); setShowPicker(false); }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <input

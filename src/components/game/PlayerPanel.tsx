@@ -9,7 +9,6 @@ const PLAYER_COLORS = [
 export function PlayerPanel() {
   const { state } = useGame();
   const { config, currentPlayerIndex, scores } = state;
-
   const currentPlayer = config.players[currentPlayerIndex];
   if (!currentPlayer) return null;
 
@@ -19,7 +18,7 @@ export function PlayerPanel() {
   return (
     <div className="player-panel animate-scale-in">
       <div className="player-panel-avatar" style={{ background: `${color}22`, borderColor: `${color}55` }}>
-        <span style={{ color }}>{currentPlayer.name.charAt(0).toUpperCase()}</span>
+        <span>{currentPlayer.emoji || currentPlayer.name.charAt(0).toUpperCase()}</span>
       </div>
       <div className="player-panel-info">
         <div className="player-panel-label">A jogar agora</div>

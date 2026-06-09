@@ -36,7 +36,7 @@ export function ScoreControls() {
               style={{ '--player-color': color } as React.CSSProperties}
             >
               <div className="score-player-avatar" style={{ background: `${color}20`, borderColor: `${color}44` }}>
-                <span style={{ color }}>{player.name.charAt(0).toUpperCase()}</span>
+                <span style={{ color }}>{player.emoji || player.name.charAt(0).toUpperCase()}</span>
               </div>
 
               <span className="score-player-name">{player.name}</span>

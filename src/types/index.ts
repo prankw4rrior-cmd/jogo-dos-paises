@@ -3,6 +3,7 @@
 export interface Player {
   id: string;
   name: string;
+  emoji: string;
 }
 
 // ─── Configuração ──────────────────────────────────────────────────────────

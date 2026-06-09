@@ -27,7 +27,7 @@ export function ScoreTable({ ranked }: ScoreTableProps) {
           <div key={entry.player.id} className="score-table-row">
             <span className="score-table-rank">#{i + 1}</span>
             <div className="score-table-avatar" style={{ background: `${color}20`, borderColor: `${color}44` }}>
-              <span style={{ color }}>{entry.player.name.charAt(0).toUpperCase()}</span>
+              <span style={{ color }}>{entry.player.emoji || entry.player.name.charAt(0).toUpperCase()}</span>
             </div>
             <span className="score-table-name">{entry.player.name}</span>
             <span className="score-table-score" style={{ color }}>{entry.score} pts</span>
