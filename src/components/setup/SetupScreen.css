@@ -178,3 +178,32 @@
   background: var(--bg-glass-hover);
   transform: scale(1.05);
 }
+
+.setup-corner-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.setup-corner-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.setup-corner-btn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+  border-color: var(--border-active);
+}

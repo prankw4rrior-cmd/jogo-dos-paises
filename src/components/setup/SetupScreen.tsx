@@ -90,10 +90,16 @@ export function SetupScreen() {
           <Logo size="lg" showName={false} />
           <h1 className="setup-title">Letra a Letra</h1>
           <p className="setup-subtitle">Com família e amigos</p>
-          <div className="setup-header-btns">
-            <button className="setup-icon-btn" onClick={() => dispatch({ type: 'GO_TO_STATS' })} aria-label="Estatísticas">📊</button>
-            <button className="setup-icon-btn" onClick={() => dispatch({ type: 'GO_TO_ABOUT' })} aria-label="Sobre">ℹ️</button>
-          </div>
+        </div>
+
+        {/* Botões de canto */}
+        <div className="setup-corner-btns animate-fade-in">
+          <button className="setup-corner-btn" onClick={() => dispatch({ type: 'GO_TO_STATS' })}>
+            📊 <span>Estatísticas</span>
+          </button>
+          <button className="setup-corner-btn" onClick={() => dispatch({ type: 'GO_TO_ABOUT' })}>
+            ℹ️ <span>Sobre</span>
+          </button>
         </div>
 
         {/* Jogadores */}

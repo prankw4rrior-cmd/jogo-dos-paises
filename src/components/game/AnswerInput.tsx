@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { startRecognition, stopRecognition, isRecognitionSupported } from '@/services/recognitionService';
+import { validateWord, startsWithLetter } from '@/services/dictionaryService';
+import { playPoint } from '@/services/soundService';
 import './AnswerInput.css';
 
 interface AnswerInputProps {
@@ -7,7 +9,7 @@ interface AnswerInputProps {
   onValidAnswer: () => void;
 }
 
-type Status = 'idle' | 'listening' | 'valid' | 'invalid';
+type Status = 'idle' | 'listening' | 'checking' | 'valid' | 'invalid' | 'wrong-letter';
 
 export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) {
   const [answer, setAnswer] = useState('');
@@ -18,51 +20,59 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
   const validatedRef = useRef(false);
 
   useEffect(() => {
-    // Limpar ao mudar de letra
     setAnswer('');
     setStatus('idle');
     setFeedback('');
     validatedRef.current = false;
   }, [currentLetter]);
 
-  function validate(text: string): boolean {
-    const clean = text.trim().toLowerCase();
-    if (clean.length === 0) return false;
-    // Aceitar a resposta se começar pela letra correcta
-    // Remover acentos para comparação
-    const normalize = (s: string) =>
-      s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    return normalize(clean).startsWith(normalize(currentLetter));
-  }
+  async function handleValidate(word: string) {
+    const trimmed = word.trim();
+    if (!trimmed || validatedRef.current) return;
 
-  function handleSubmit() {
-    if (validatedRef.current) return;
-    const ok = validate(answer);
-    setStatus(ok ? 'valid' : 'invalid');
-    setFeedback(ok
-      ? `✓ "${answer}" é válido!`
-      : `✗ "${answer}" não começa por ${currentLetter}.`
-    );
-    if (ok) {
-      validatedRef.current = true;
-      onValidAnswer();
+    // 1. Verificar letra
+    if (!startsWithLetter(trimmed, currentLetter)) {
+      setStatus('wrong-letter');
+      setFeedback(`✗ "${trimmed}" não começa por ${currentLetter.toUpperCase()}.`);
+      return;
+    }
+
+    // 2. Verificar no dicionário
+    setStatus('checking');
+    setFeedback('A verificar no dicionário…');
+
+    const exists = await validateWord(trimmed);
+
+    if (exists) {
+      setStatus('valid');
+      setFeedback(`✓ "${trimmed}" é válido!`);
+      if (!validatedRef.current) {
+        validatedRef.current = true;
+        playPoint();
+        onValidAnswer();
+      }
+    } else {
+      setStatus('invalid');
+      setFeedback(`✗ "${trimmed}" não foi encontrado no dicionário.`);
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') handleSubmit();
+    if (e.key === 'Enter') void handleValidate(answer);
   }
 
   function handleMic() {
     if (listening) {
       stopRecognition();
       setListening(false);
+      setStatus('idle');
+      setFeedback('');
       return;
     }
 
     setListening(true);
     setStatus('listening');
-    setFeedback('A ouvir…');
+    setFeedback('A ouvir… fala agora!');
     setAnswer('');
 
     startRecognition(
@@ -70,16 +80,7 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
         setAnswer(transcript);
         if (isFinal) {
           setListening(false);
-          const ok = validate(transcript);
-          setStatus(ok ? 'valid' : 'invalid');
-          setFeedback(ok
-            ? `✓ "${transcript}" é válido!`
-            : `✗ "${transcript}" não começa por ${currentLetter}.`
-          );
-          if (ok && !validatedRef.current) {
-            validatedRef.current = true;
-            onValidAnswer();
-          }
+          void handleValidate(transcript);
         }
       },
       (error) => {
@@ -87,14 +88,27 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
         setStatus('idle');
         setFeedback(error === 'no-speech' ? 'Não ouvi nada. Tenta de novo.' : 'Erro no microfone.');
       },
-      () => { setListening(false); }
+      () => setListening(false)
     );
   }
 
-  const statusClass = status === 'valid' ? 'answer-valid'
-    : status === 'invalid' ? 'answer-invalid'
-    : status === 'listening' ? 'answer-listening'
-    : '';
+  const statusClass = {
+    valid: 'answer-valid',
+    invalid: 'answer-invalid',
+    'wrong-letter': 'answer-invalid',
+    listening: 'answer-listening',
+    checking: 'answer-checking',
+    idle: '',
+  }[status];
+
+  const feedbackClass = {
+    valid: 'feedback-ok',
+    invalid: 'feedback-err',
+    'wrong-letter': 'feedback-err',
+    listening: 'feedback-info',
+    checking: 'feedback-info',
+    idle: '',
+  }[status];
 
   return (
     <div className={`answer-input-wrapper ${statusClass}`}>
@@ -104,38 +118,42 @@ export function AnswerInput({ currentLetter, onValidAnswer }: AnswerInputProps) 
           className="answer-input"
           type="text"
           value={answer}
-          onChange={e => { setAnswer(e.target.value); setStatus('idle'); setFeedback(''); }}
+          onChange={e => {
+            setAnswer(e.target.value);
+            if (status !== 'idle') { setStatus('idle'); setFeedback(''); }
+          }}
           onKeyDown={handleKeyDown}
-          placeholder={`Escreve uma palavra com ${currentLetter}…`}
+          placeholder={`Palavra com ${currentLetter.toUpperCase()}…`}
           maxLength={40}
-          disabled={listening}
+          disabled={listening || status === 'checking'}
+          autoComplete="off"
+          autoCapitalize="none"
         />
 
-        {/* Botão microfone */}
         {isRecognitionSupported() && (
           <button
             className={`mic-btn ${listening ? 'mic-active' : ''}`}
             onClick={handleMic}
-            aria-label={listening ? 'Parar gravação' : 'Falar resposta'}
+            disabled={status === 'checking'}
+            aria-label={listening ? 'Parar' : 'Microfone'}
           >
             {listening ? '⏹' : '🎤'}
           </button>
         )}
 
-        {/* Botão validar */}
         <button
           className="submit-btn"
-          onClick={handleSubmit}
-          disabled={answer.trim().length === 0 || listening}
-          aria-label="Validar resposta"
+          onClick={() => void handleValidate(answer)}
+          disabled={answer.trim().length === 0 || listening || status === 'checking' || status === 'valid'}
+          aria-label="Validar"
         >
-          ✓
+          {status === 'checking' ? '…' : '✓'}
         </button>
       </div>
 
-      {/* Feedback */}
       {feedback && (
-        <div className={`answer-feedback ${status === 'valid' ? 'feedback-ok' : status === 'invalid' ? 'feedback-err' : 'feedback-info'}`}>
+        <div className={`answer-feedback ${feedbackClass}`}>
+          {status === 'checking' && <span className="checking-spinner" />}
           {feedback}
         </div>
       )}
