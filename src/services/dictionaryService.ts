@@ -24,8 +24,14 @@ export async function validateAnswer(
 ): Promise<{ valid: boolean; reason: string }> {
   const trimmed = word.trim();
 
+  // Mínimo de 2 caracteres para qualquer categoria
   if (trimmed.length < 2) {
-    return { valid: false, reason: 'Palavra demasiado curta.' };
+    return { valid: false, reason: 'A resposta deve ter pelo menos 2 letras.' };
+  }
+
+  // Mínimo de 3 caracteres para nomes próprios (evitar "Er", "Eu", etc.)
+  if (PROPER_NOUN_CATEGORIES.includes(category) && trimmed.length < 3) {
+    return { valid: false, reason: 'A resposta deve ter pelo menos 3 letras.' };
   }
 
   // Verificar letra
@@ -33,7 +39,7 @@ export async function validateAnswer(
     return { valid: false, reason: `"${trimmed}" não começa por ${letter.toUpperCase()}.` };
   }
 
-  // Nomes próprios — aceitar directamente
+  // Nomes próprios — aceitar directamente se tiver comprimento suficiente
   if (PROPER_NOUN_CATEGORIES.includes(category)) {
     return { valid: true, reason: `"${trimmed}" aceite!` };
   }
