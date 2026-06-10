@@ -56,6 +56,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'START_COUNTDOWN': return { ...state, phase: 'countdown' };
+    case 'START_ANNOUNCING': return { ...state, phase: 'announcing' };
     case 'START_PLAYING': return { ...state, phase: 'playing' };
     case 'PAUSE': return state.phase === 'playing' ? { ...state, phase: 'paused' } : state;
     case 'RESUME': return state.phase === 'paused' ? { ...state, phase: 'playing' } : state;

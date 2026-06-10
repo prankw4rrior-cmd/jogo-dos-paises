@@ -115,6 +115,7 @@ export interface AppSettings {
 export type GameAction =
   | { type: 'START_GAME'; payload: GameConfig }
   | { type: 'START_COUNTDOWN' }
+  | { type: 'START_ANNOUNCING' }
   | { type: 'START_PLAYING' }
   | { type: 'TICK' }
   | { type: 'PAUSE' }

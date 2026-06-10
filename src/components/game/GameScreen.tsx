@@ -36,7 +36,7 @@ export function GameScreen() {
 
   // Quando o countdown termina, avança para 'announcing'
   const handleCountdownComplete = useCallback(() => {
-    dispatch({ type: 'START_PLAYING' });
+    dispatch({ type: 'START_ANNOUNCING' });
   }, [dispatch]);
 
   function handleNextRound() {
