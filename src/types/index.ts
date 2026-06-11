@@ -62,7 +62,7 @@ export interface GameConfig {
 // ─── Estado do jogo ────────────────────────────────────────────────────────
 
 export type GamePhase = 'countdown' | 'announcing' | 'playing' | 'paused' | 'scoring' | 'finished';
-export type AppScreen = 'setup' | 'game' | 'results' | 'stats' | 'about';
+export type AppScreen = 'setup' | 'game' | 'results' | 'stats' | 'about' | 'online';
 export type ThemeOption = 'system' | 'light' | 'dark';
 export type AccentColor = 'purple' | 'blue' | 'green' | 'orange' | 'pink';
 
@@ -129,4 +129,5 @@ export type GameAction =
   | { type: 'RESET' }
   | { type: 'GO_TO_STATS' }
   | { type: 'GO_TO_ABOUT' }
+  | { type: 'GO_TO_ONLINE' }
   | { type: 'GO_TO_SETUP' };

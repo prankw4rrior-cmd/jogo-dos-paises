@@ -110,6 +110,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
     case 'GO_TO_STATS': return { ...state, screen: 'stats' };
     case 'GO_TO_ABOUT': return { ...state, screen: 'about' };
+    case 'GO_TO_ONLINE': return { ...state, screen: 'online' };
     case 'GO_TO_SETUP': {
       const first = pickRandomLetter(ALPHABET_PT);
       return { ...INITIAL_STATE, currentLetter: first, remainingLetters: removeLetter(ALPHABET_PT, first) };

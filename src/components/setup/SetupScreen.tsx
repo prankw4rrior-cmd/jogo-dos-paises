@@ -183,8 +183,13 @@ export function SetupScreen() {
 
         <div className="animate-slide-up" style={{ animationDelay: '210ms' }}>
           <Button variant="primary" size="lg" fullWidth onClick={handleStart}>
-            🎮 Iniciar Jogo
+            🎮 Jogo local
           </Button>
+          <div style={{ marginTop: 10 }}>
+            <Button variant="secondary" size="lg" fullWidth onClick={() => dispatch({ type: 'GO_TO_ONLINE' })}>
+              🌐 Multijogador online
+            </Button>
+          </div>
         </div>
 
         <div className="setup-decoration" aria-hidden>

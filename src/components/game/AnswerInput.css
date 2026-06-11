@@ -19,12 +19,17 @@
   box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
 }
 
-.answer-listening {
+.answer-submitted {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.answer-listening {
+  border-color: var(--accent);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* Input row */
 .answer-input-row {
   display: flex;
   gap: 8px;
@@ -81,9 +86,9 @@
   width: 46px;
   height: 46px;
   border-radius: var(--radius-md);
-  background: var(--success-bg);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  color: var(--success);
+  background: var(--accent);
+  border: none;
+  color: white;
   font-size: 20px;
   font-weight: 700;
   cursor: pointer;
@@ -92,62 +97,97 @@
   justify-content: center;
   transition: all var(--transition);
   -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow-accent);
 }
 
-.submit-btn:hover:not(:disabled) {
-  background: rgba(74, 222, 128, 0.2);
-  transform: scale(1.05);
+.submit-btn:hover:not(:disabled) { transform: scale(1.05); }
+.submit-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+
+/* Votação */
+.answer-voting {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
 }
 
-.submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.answer-voting-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
+.answer-voting-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.answer-voting-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.answer-voting-question {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.answer-voting-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.vote-btn {
+  height: 52px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  border: 2px solid transparent;
+}
+
+.vote-valid {
+  background: var(--success-bg);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: var(--success);
+}
+
+.vote-valid:hover {
+  background: rgba(74, 222, 128, 0.25);
+  transform: scale(1.02);
+}
+
+.vote-invalid {
+  background: var(--danger-bg);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+.vote-invalid:hover {
+  background: rgba(248, 113, 113, 0.25);
+  transform: scale(1.02);
+}
+
+/* Feedback */
 .answer-feedback {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   text-align: center;
 }
 
-.feedback-ok {
-  background: var(--success-bg);
-  color: var(--success);
-}
-
-.feedback-err {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
-
-.feedback-info {
-  background: var(--bg-glass);
-  color: var(--text-secondary);
-}
-
-.answer-checking {
-  border-color: var(--warning);
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
-}
-
-.feedback-info {
-  background: var(--bg-glass);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.checking-spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--text-tertiary);
-  border-top-color: var(--warning);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+.feedback-ok { background: var(--success-bg); color: var(--success); }
+.feedback-err { background: var(--danger-bg); color: var(--danger); }
+.feedback-info { background: var(--bg-glass); color: var(--text-secondary); }

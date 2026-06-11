@@ -5,6 +5,7 @@ import { GameScreen } from '@/components/game/GameScreen';
 import { ResultsScreen } from '@/components/results/ResultsScreen';
 import { StatsScreen } from '@/components/stats/StatsScreen';
 import { AboutScreen } from '@/components/about/AboutScreen';
+import { OnlineLobby } from '@/components/online/OnlineLobby';
 import { InstallBanner } from '@/components/ui/InstallBanner';
 import { SplashScreen } from '@/components/ui/SplashScreen';
 
@@ -22,6 +23,7 @@ export function App() {
       {state.screen === 'results' && <ResultsScreen />}
       {state.screen === 'stats'   && <StatsScreen />}
       {state.screen === 'about'   && <AboutScreen />}
+      {state.screen === 'online'  && <OnlineLobby />}
     </>
   );
 }

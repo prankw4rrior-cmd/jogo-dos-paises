@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { startRecognition, stopRecognition, isRecognitionSupported } from '@/services/recognitionService';
-import { validateAnswer } from '@/services/dictionaryService';
+import { startsWithLetter } from '@/services/dictionaryService';
 import { playPoint } from '@/services/soundService';
 import type { CategoryKey } from '@/types';
 import './AnswerInput.css';
@@ -11,7 +11,7 @@ interface AnswerInputProps {
   onValidAnswer: () => void;
 }
 
-type Status = 'idle' | 'listening' | 'checking' | 'valid' | 'invalid';
+type Status = 'idle' | 'listening' | 'submitted' | 'valid' | 'invalid';
 
 export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: AnswerInputProps) {
   const [answer, setAnswer] = useState('');
@@ -27,53 +27,63 @@ export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: A
     validatedRef.current = false;
   }, [currentLetter, currentCategory]);
 
-  async function handleValidate(word: string) {
-    const trimmed = word.trim();
-    if (!trimmed || validatedRef.current || status === 'checking') return;
+  function handleSubmit() {
+    const trimmed = answer.trim();
+    if (!trimmed || status === 'submitted' || status === 'valid') return;
 
-    setStatus('checking');
-    setFeedback('A verificar…');
+    // Verificar só a letra — validação do conteúdo é humana
+    if (!startsWithLetter(trimmed, currentLetter)) {
+      setFeedback(`"${trimmed}" não começa por ${currentLetter.toUpperCase()}.`);
+      setStatus('invalid');
+      return;
+    }
 
-    const result = await validateAnswer(trimmed, currentLetter, currentCategory);
+    setStatus('submitted');
+    setFeedback('');
+  }
 
-    if (result.valid) {
+  function handleVote(valid: boolean) {
+    if (validatedRef.current) return;
+    if (valid) {
       setStatus('valid');
-      setFeedback(`✓ ${result.reason}`);
-      if (!validatedRef.current) {
-        validatedRef.current = true;
-        playPoint();
-        onValidAnswer();
-      }
+      setFeedback(`✓ "${answer.trim()}" aceite!`);
+      validatedRef.current = true;
+      playPoint();
+      onValidAnswer();
     } else {
       setStatus('invalid');
-      setFeedback(`✗ ${result.reason}`);
+      setFeedback(`✗ "${answer.trim()}" não aceite.`);
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') void handleValidate(answer);
+    if (e.key === 'Enter') handleSubmit();
   }
 
   function handleMic() {
     if (listening) {
       stopRecognition();
       setListening(false);
-      setStatus('idle');
-      setFeedback('');
       return;
     }
 
     setListening(true);
     setStatus('listening');
-    setFeedback('A ouvir… fala agora!');
     setAnswer('');
+    setFeedback('');
 
     startRecognition(
       (transcript, isFinal) => {
         setAnswer(transcript);
         if (isFinal) {
           setListening(false);
-          void handleValidate(transcript);
+          // Após reconhecimento, submeter automaticamente para votação
+          if (startsWithLetter(transcript, currentLetter)) {
+            setStatus('submitted');
+          } else {
+            setStatus('invalid');
+            setFeedback(`"${transcript}" não começa por ${currentLetter.toUpperCase()}.`);
+          }
         }
       },
       (error) => {
@@ -85,65 +95,77 @@ export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: A
     );
   }
 
-  const statusClass = {
-    valid: 'answer-valid',
-    invalid: 'answer-invalid',
-    listening: 'answer-listening',
-    checking: 'answer-checking',
-    idle: '',
-  }[status];
+  const isSubmitted = status === 'submitted';
+  const isDone = status === 'valid' || status === 'invalid';
 
-  const feedbackClass = {
-    valid: 'feedback-ok',
-    invalid: 'feedback-err',
-    listening: 'feedback-info',
-    checking: 'feedback-info',
-    idle: '',
-  }[status];
+  const wrapperClass = status === 'valid' ? 'answer-valid'
+    : status === 'invalid' ? 'answer-invalid'
+    : status === 'submitted' ? 'answer-submitted'
+    : status === 'listening' ? 'answer-listening'
+    : '';
 
   return (
-    <div className={`answer-input-wrapper ${statusClass}`}>
-      <div className="answer-input-row">
-        <input
-          className="answer-input"
-          type="text"
-          value={answer}
-          onChange={e => {
-            setAnswer(e.target.value);
-            if (status !== 'idle') { setStatus('idle'); setFeedback(''); }
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={`Palavra com ${currentLetter.toUpperCase()}…`}
-          maxLength={40}
-          disabled={listening || status === 'checking' || status === 'valid'}
-          autoComplete="off"
-          autoCapitalize="none"
-        />
+    <div className={`answer-input-wrapper ${wrapperClass}`}>
 
-        {isRecognitionSupported() && (
+      {/* Input + botões de entrada */}
+      {!isSubmitted && !isDone && (
+        <div className="answer-input-row">
+          <input
+            className="answer-input"
+            type="text"
+            value={answer}
+            onChange={e => { setAnswer(e.target.value); setStatus('idle'); setFeedback(''); }}
+            onKeyDown={handleKeyDown}
+            placeholder={`Palavra com ${currentLetter.toUpperCase()}…`}
+            maxLength={40}
+            disabled={listening}
+            autoComplete="off"
+            autoCapitalize="none"
+          />
+
+          {isRecognitionSupported() && (
+            <button
+              className={`mic-btn ${listening ? 'mic-active' : ''}`}
+              onClick={handleMic}
+              aria-label={listening ? 'Parar' : 'Microfone'}
+            >
+              {listening ? '⏹' : '🎤'}
+            </button>
+          )}
+
           <button
-            className={`mic-btn ${listening ? 'mic-active' : ''}`}
-            onClick={handleMic}
-            disabled={status === 'checking' || status === 'valid'}
-            aria-label={listening ? 'Parar' : 'Microfone'}
+            className="submit-btn"
+            onClick={handleSubmit}
+            disabled={answer.trim().length < 2 || listening}
+            aria-label="Submeter"
           >
-            {listening ? '⏹' : '🎤'}
+            →
           </button>
-        )}
+        </div>
+      )}
 
-        <button
-          className="submit-btn"
-          onClick={() => void handleValidate(answer)}
-          disabled={answer.trim().length === 0 || listening || status === 'checking' || status === 'valid'}
-          aria-label="Validar"
-        >
-          {status === 'checking' ? '…' : '✓'}
-        </button>
-      </div>
+      {/* Resposta submetida — aguardar votação */}
+      {isSubmitted && (
+        <div className="answer-voting">
+          <div className="answer-voting-word">
+            <span className="answer-voting-label">Resposta:</span>
+            <span className="answer-voting-value">{answer.trim()}</span>
+          </div>
+          <p className="answer-voting-question">Os outros jogadores aceitam?</p>
+          <div className="answer-voting-btns">
+            <button className="vote-btn vote-valid" onClick={() => handleVote(true)}>
+              ✓ Válido
+            </button>
+            <button className="vote-btn vote-invalid" onClick={() => handleVote(false)}>
+              ✗ Inválido
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* Feedback final */}
       {feedback && (
-        <div className={`answer-feedback ${feedbackClass}`}>
-          {status === 'checking' && <span className="checking-spinner" />}
+        <div className={`answer-feedback ${status === 'valid' ? 'feedback-ok' : status === 'invalid' ? 'feedback-err' : 'feedback-info'}`}>
           {feedback}
         </div>
       )}
