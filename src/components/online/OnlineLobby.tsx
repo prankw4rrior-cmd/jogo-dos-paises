@@ -74,6 +74,21 @@ export function OnlineLobby() {
     try {
       const code = await createRoom(player, 60, remaining, firstLetter, firstCategory);
       setRoomCode(code);
+      // Criar estado local da sala para mostrar o ecrã de espera imediatamente
+      setRoom({
+        code,
+        hostId: player.id,
+        phase: 'waiting',
+        currentLetter: firstLetter,
+        currentCategory: firstCategory,
+        round: 1,
+        timePerRound: 60,
+        usedLetters: [firstLetter],
+        remainingLetters: remaining,
+        players: { [player.id]: player },
+        answers: {},
+        createdAt: Date.now(),
+      });
       setScreen('waiting');
     } catch {
       setError('Erro ao criar sala. Verifica a ligação à internet.');
