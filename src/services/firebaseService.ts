@@ -198,7 +198,6 @@ export async function submitAnswer(
     text,
     valid: null,
   });
-  await setOnlinePhase(code, 'voting');
 }
 
 export async function voteAnswer(

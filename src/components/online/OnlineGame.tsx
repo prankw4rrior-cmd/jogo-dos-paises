@@ -49,7 +49,6 @@ export function OnlineGame({ room, myPlayerId, amHost, onLeave }: OnlineGameProp
   const phase = localRoom.phase;
   const catInfo = CATEGORY_INFO[localRoom.currentCategory];
   const players = Object.values(localRoom.players).sort((a, b) => b.score - a.score);
-  const myAnswer = localRoom.answers?.[myPlayerId];
   const isLastRound = localRoom.remainingLetters.length === 0;
 
   // Observar sala
@@ -83,7 +82,7 @@ export function OnlineGame({ room, myPlayerId, amHost, onLeave }: OnlineGameProp
         playTimeUp();
         vibrateTimeUp();
         if (amHost && phase === 'playing') {
-          void setOnlinePhase(room.code, 'scoring');
+          void setOnlinePhase(room.code, 'voting');
         }
       } else {
         setTimeLeft(remaining);
@@ -111,10 +110,18 @@ export function OnlineGame({ room, myPlayerId, amHost, onLeave }: OnlineGameProp
     await submitAnswer(room.code, myPlayerId, trimmed);
   }
 
-  async function handleVote(valid: boolean) {
-    if (!myAnswer || myAnswer.valid !== null) return;
-    await voteAnswer(room.code, myPlayerId, valid);
+  async function handleVote(playerId: string, valid: boolean) {
+    const ans = localRoom.answers?.[playerId];
+    if (!ans || ans.valid !== null) return;
+    await voteAnswer(room.code, playerId, valid);
     if (valid) { playPoint(); }
+
+    // Verificar se todas as respostas já foram votadas → ir para scoring
+    const allAnswers = { ...localRoom.answers, [playerId]: { ...ans, valid } };
+    const allVoted = Object.values(allAnswers).every(a => a.valid !== null);
+    if (allVoted && amHost) {
+      await setOnlinePhase(room.code, 'scoring');
+    }
   }
 
   function handleMic() {
@@ -269,7 +276,7 @@ export function OnlineGame({ room, myPlayerId, amHost, onLeave }: OnlineGameProp
         )}
 
         {/* Votação */}
-        {(phase === 'voting' || phase === 'scoring') && (
+        {phase === 'voting' && (
           <div className="og-voting-section">
             {Object.values(localRoom.answers ?? {}).map(ans => {
               const p = localRoom.players[ans.playerId];
@@ -283,8 +290,8 @@ export function OnlineGame({ room, myPlayerId, amHost, onLeave }: OnlineGameProp
                   <div className="og-vote-answer">"{ans.text}"</div>
                   {ans.valid === null ? (
                     <div className="og-vote-btns">
-                      <button className="og-vote-valid" onClick={() => void handleVote(true)}>✓ Válido</button>
-                      <button className="og-vote-invalid" onClick={() => void handleVote(false)}>✗ Inválido</button>
+                      <button className="og-vote-valid" onClick={() => void handleVote(ans.playerId, true)}>✓ Válido</button>
+                      <button className="og-vote-invalid" onClick={() => void handleVote(ans.playerId, false)}>✗ Inválido</button>
                     </div>
                   ) : (
                     <div className={`og-vote-result ${ans.valid ? 'og-result-ok' : 'og-result-err'}`}>
@@ -294,6 +301,26 @@ export function OnlineGame({ room, myPlayerId, amHost, onLeave }: OnlineGameProp
                 </Card>
               );
             })}
+
+            {/* Jogadores que não responderam */}
+            {players
+              .filter(p => !localRoom.answers?.[p.id])
+              .map(p => (
+                <Card key={p.id} className="og-vote-card">
+                  <div className="og-vote-player">
+                    <span>{p.emoji}</span>
+                    <span>{p.name}</span>
+                  </div>
+                  <div className="og-vote-answer og-no-answer">Sem resposta</div>
+                </Card>
+              ))}
+
+            {/* Avançar para pontuação (host) */}
+            {amHost && (
+              <Button variant="primary" size="lg" fullWidth onClick={() => void setOnlinePhase(room.code, 'scoring')}>
+                Continuar →
+              </Button>
+            )}
           </div>
         )}
 

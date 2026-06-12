@@ -318,3 +318,9 @@
 .og-final-emoji { font-size: 20px; }
 .og-final-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .og-final-score { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--accent); }
+
+.og-no-answer {
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-size: 15px;
+}
