@@ -206,3 +206,52 @@
   justify-content: center;
   padding: 10px 0;
 }
+
+/* Mode cards */
+.mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  margin-bottom: 10px;
+}
+
+.mode-card:hover { border-color: var(--border-active); }
+
+.mode-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+  box-shadow: var(--shadow-accent);
+}
+
+.mode-emoji { font-size: 32px; flex-shrink: 0; }
+
+.mode-text { display: flex; flex-direction: column; gap: 4px; }
+
+.mode-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mode-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Empty player slot */
+.waiting-empty { opacity: 0.5; }
+.waiting-empty-avatar {
+  border-style: dashed !important;
+  background: var(--bg-glass) !important;
+}

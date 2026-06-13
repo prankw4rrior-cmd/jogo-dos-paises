@@ -1,18 +1,11 @@
 /**
  * Serviço Firebase para modo multijogador online.
- * Completamente separado do modo local — não afecta o jogo normal.
+ * Suporta dois modos: 'team' (equipa) e 'versus' (1v1).
  */
 
 import { initializeApp } from 'firebase/app';
 import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  onValue,
-  update,
-  off,
-  type DatabaseReference,
+  getDatabase, ref, set, get, onValue, update, off,
 } from 'firebase/database';
 import type { CategoryKey } from '@/types';
 
@@ -29,7 +22,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ─── Tipos da sala online ──────────────────────────────────────────────────
+// ─── Tipos ──────────────────────────────────────────────────────────────
+
+export type RoomMode = 'team' | 'versus';
+export type OnlinePhase = 'waiting' | 'countdown' | 'playing' | 'scoring' | 'finished';
 
 export interface OnlinePlayer {
   id: string;
@@ -39,22 +35,14 @@ export interface OnlinePlayer {
   isHost: boolean;
 }
 
-export type OnlinePhase =
-  | 'waiting'    // à espera de jogadores
-  | 'countdown'  // contagem 3-2-1
-  | 'playing'    // a jogar
-  | 'voting'     // a votar na resposta
-  | 'scoring'    // a ver pontuações
-  | 'finished';  // fim do jogo
-
-export interface OnlineAnswer {
-  playerId: string;
+export interface PlayerAnswer {
   text: string;
-  valid: boolean | null; // null = ainda não votado
+  status: 'pending' | 'correct' | 'wrong' | 'gaveup'; // pending = ainda a tentar
 }
 
 export interface OnlineRoom {
   code: string;
+  mode: RoomMode;
   hostId: string;
   phase: OnlinePhase;
   currentLetter: string;
@@ -64,33 +52,30 @@ export interface OnlineRoom {
   usedLetters: string[];
   remainingLetters: string[];
   players: Record<string, OnlinePlayer>;
-  answers: Record<string, OnlineAnswer>; // playerId → resposta
+  answers: Record<string, PlayerAnswer>; // playerId → resposta da ronda actual
   createdAt: number;
 }
 
-// ─── Gerar código de sala ──────────────────────────────────────────────────
+// ─── Código de sala ─────────────────────────────────────────────────────
 
 export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 
-// ─── Criar sala ────────────────────────────────────────────────────────────
+// ─── Criar sala ─────────────────────────────────────────────────────────
 
 export async function createRoom(
   player: OnlinePlayer,
+  mode: RoomMode,
   timePerRound: number,
   remainingLetters: string[],
   firstLetter: string,
   firstCategory: CategoryKey
 ): Promise<string> {
   let code = generateRoomCode();
-
-  // Garantir código único
   let attempts = 0;
   while (attempts < 5) {
     const existing = await get(ref(db, `rooms/${code}`));
@@ -101,6 +86,7 @@ export async function createRoom(
 
   const room: OnlineRoom = {
     code,
+    mode,
     hostId: player.id,
     phase: 'waiting',
     currentLetter: firstLetter,
@@ -118,34 +104,24 @@ export async function createRoom(
   return code;
 }
 
-// ─── Entrar numa sala ──────────────────────────────────────────────────────
+// ─── Entrar numa sala ───────────────────────────────────────────────────
 
-export async function joinRoom(
-  code: string,
-  player: OnlinePlayer
-): Promise<OnlineRoom | null> {
+export async function joinRoom(code: string, player: OnlinePlayer): Promise<OnlineRoom | null> {
   const roomRef = ref(db, `rooms/${code.toUpperCase()}`);
   const snapshot = await get(roomRef);
-
   if (!snapshot.exists()) return null;
 
   const room = snapshot.val() as OnlineRoom;
   if (room.phase !== 'waiting') return null;
-  if (Object.keys(room.players).length >= 8) return null;
+  if (Object.keys(room.players).length >= 2) return null; // máx 2 jogadores
 
-  await update(ref(db, `rooms/${code}/players`), {
-    [player.id]: player,
-  });
-
-  return room;
+  await update(ref(db, `rooms/${code.toUpperCase()}/players`), { [player.id]: player });
+  return { ...room, players: { ...room.players, [player.id]: player } };
 }
 
-// ─── Observar sala em tempo real ───────────────────────────────────────────
+// ─── Observar sala ──────────────────────────────────────────────────────
 
-export function watchRoom(
-  code: string,
-  callback: (room: OnlineRoom | null) => void
-): () => void {
+export function watchRoom(code: string, callback: (room: OnlineRoom | null) => void): () => void {
   const roomRef = ref(db, `rooms/${code}`);
   onValue(roomRef, (snapshot) => {
     callback(snapshot.exists() ? (snapshot.val() as OnlineRoom) : null);
@@ -153,7 +129,7 @@ export function watchRoom(
   return () => off(roomRef);
 }
 
-// ─── Acções do host ────────────────────────────────────────────────────────
+// ─── Acções ─────────────────────────────────────────────────────────────
 
 export async function startOnlineGame(code: string): Promise<void> {
   await update(ref(db, `rooms/${code}`), { phase: 'countdown' });
@@ -175,9 +151,7 @@ export async function nextOnlineRound(
     phase: 'countdown',
     currentLetter: nextLetter,
     currentCategory: nextCategory,
-    usedLetters,
-    remainingLetters,
-    round,
+    usedLetters, remainingLetters, round,
     answers: {},
   });
 }
@@ -186,54 +160,18 @@ export async function endOnlineGame(code: string): Promise<void> {
   await update(ref(db, `rooms/${code}`), { phase: 'finished' });
 }
 
-// ─── Acções dos jogadores ──────────────────────────────────────────────────
-
-export async function submitAnswer(
-  code: string,
-  playerId: string,
-  text: string
-): Promise<void> {
-  await set(ref(db, `rooms/${code}/answers/${playerId}`), {
-    playerId,
-    text,
-    valid: null,
-  });
+/** Submete ou actualiza a resposta de um jogador */
+export async function setPlayerAnswer(code: string, playerId: string, answer: PlayerAnswer): Promise<void> {
+  await set(ref(db, `rooms/${code}/answers/${playerId}`), answer);
 }
 
-export async function voteAnswer(
-  code: string,
-  playerId: string,
-  valid: boolean
-): Promise<void> {
-  await update(ref(db, `rooms/${code}/answers/${playerId}`), { valid });
-  if (valid) {
-    // Incrementar pontuação
-    const snapshot = await get(ref(db, `rooms/${code}/players/${playerId}/score`));
-    const current = (snapshot.val() as number) ?? 0;
-    await set(ref(db, `rooms/${code}/players/${playerId}/score`), current + 1);
-  }
-}
-
-export async function updateOnlineScore(
-  code: string,
-  playerId: string,
-  delta: number
-): Promise<void> {
+/** Adiciona pontos a um jogador */
+export async function addScore(code: string, playerId: string, delta: number): Promise<void> {
   const snapshot = await get(ref(db, `rooms/${code}/players/${playerId}/score`));
   const current = (snapshot.val() as number) ?? 0;
-  await set(
-    ref(db, `rooms/${code}/players/${playerId}/score`),
-    Math.max(0, current + delta)
-  );
+  await set(ref(db, `rooms/${code}/players/${playerId}/score`), Math.max(0, current + delta));
 }
-
-// ─── Limpar sala antiga ────────────────────────────────────────────────────
 
 export async function deleteRoom(code: string): Promise<void> {
   await set(ref(db, `rooms/${code}`), null);
-}
-
-// ─── Referência directa (para uso pontual) ────────────────────────────────
-export function roomRef(code: string): DatabaseReference {
-  return ref(db, `rooms/${code}`);
 }

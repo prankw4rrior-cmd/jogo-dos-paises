@@ -324,3 +324,107 @@
   font-style: italic;
   font-size: 15px;
 }
+
+/* Estado do adversário */
+.og-opponent-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.og-opponent-emoji { font-size: 20px; }
+.og-opponent-name { font-weight: 600; color: var(--text-primary); }
+.og-opponent-state { color: var(--text-secondary); margin-left: auto; text-align: right; }
+
+.og-opp-correct { border-color: rgba(74,222,128,0.3); background: var(--success-bg); }
+.og-opp-correct .og-opponent-state { color: var(--success); font-weight: 700; }
+
+.og-opp-wrong { border-color: rgba(248,113,113,0.2); }
+.og-opp-gaveup { opacity: 0.6; }
+
+/* Retry hint */
+.og-retry-hint {
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* Mark buttons */
+.og-mark-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.og-mark-correct, .og-mark-wrong {
+  height: 48px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.og-mark-correct {
+  background: var(--success-bg);
+  border-color: rgba(74,222,128,0.3);
+  color: var(--success);
+}
+.og-mark-correct:hover { background: rgba(74,222,128,0.25); transform: scale(1.02); }
+
+.og-mark-wrong {
+  background: var(--bg-glass);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.og-mark-wrong:hover { background: var(--bg-glass-hover); }
+
+.og-letter-warning {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 4px 0;
+}
+
+.og-giveup-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px;
+  align-self: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* My status card */
+.og-my-status {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.og-status-correct { border-color: rgba(74,222,128,0.3); background: var(--success-bg); }
+.og-status-text { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.og-status-hint { font-size: 13px; color: var(--text-tertiary); }
+
+/* Round summary */
+.og-round-summary { display: flex; flex-direction: column; gap: 10px; }
+.og-summary-row { display: flex; align-items: center; gap: 10px; }
+.og-summary-emoji { font-size: 20px; }
+.og-summary-name { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.og-summary-answer { margin-left: auto; font-size: 14px; color: var(--text-secondary); font-family: var(--font-display); font-weight: 600; }
