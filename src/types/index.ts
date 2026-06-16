@@ -57,6 +57,27 @@ export interface GameConfig {
   noTimer: boolean;
   difficulty: Difficulty;
   selectedCategories: CategoryKey[];
+  categoriesPerRound: number;   // quantas categorias por ronda (1–5)
+  repeatLetters: boolean;       // permitir repetir letras após esgotar o alfabeto
+}
+
+// ─── Resposta de uma ronda ─────────────────────────────────────────────────
+
+export interface RoundAnswer {
+  category: CategoryKey;
+  answer: string;
+  valid: boolean;
+}
+
+// ─── Histórico de uma ronda ────────────────────────────────────────────────
+
+export interface RoundHistory {
+  round: number;
+  letter: string;
+  playerName: string;
+  categories: CategoryKey[];
+  answers: RoundAnswer[];       // respostas dadas nessa ronda
+  examples: Partial<CategoryExamples>; // exemplos para as categorias sorteadas
 }
 
 // ─── Estado do jogo ────────────────────────────────────────────────────────
@@ -70,7 +91,7 @@ export interface GameState {
   screen: AppScreen;
   config: GameConfig;
   currentLetter: string;
-  currentCategory: CategoryKey;
+  currentCategories: CategoryKey[];  // lista de categorias desta ronda
   currentPlayerIndex: number;
   round: number;
   scores: Record<string, number>;
@@ -78,6 +99,7 @@ export interface GameState {
   timeRemaining: number;
   usedLetters: string[];
   remainingLetters: string[];
+  history: RoundHistory[];           // histórico de todas as rondas
 }
 
 // ─── Estatísticas persistidas ──────────────────────────────────────────────
@@ -108,6 +130,8 @@ export interface AppSettings {
   noTimer: boolean;
   difficulty: Difficulty;
   selectedCategories: CategoryKey[];
+  categoriesPerRound: number;
+  repeatLetters: boolean;
 }
 
 // ─── Actions do Reducer ────────────────────────────────────────────────────
@@ -122,6 +146,7 @@ export type GameAction =
   | { type: 'RESUME' }
   | { type: 'START_SCORING' }
   | { type: 'SKIP_LETTER' }
+  | { type: 'SAVE_ROUND_HISTORY'; payload: RoundHistory }
   | { type: 'ADD_POINT'; payload: { playerId: string } }
   | { type: 'REMOVE_POINT'; payload: { playerId: string } }
   | { type: 'NEXT_ROUND' }

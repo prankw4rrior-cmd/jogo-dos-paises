@@ -255,3 +255,52 @@
   border-style: dashed !important;
   background: var(--bg-glass) !important;
 }
+
+.online-time-presets {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.online-cats-per-round {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.online-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.online-cat-chip {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.online-cat-chip:hover { background: var(--bg-glass-hover); color: var(--text-primary); }
+.online-cat-chip.active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.config-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}

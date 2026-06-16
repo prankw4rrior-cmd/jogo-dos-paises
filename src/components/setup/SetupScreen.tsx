@@ -36,6 +36,8 @@ export function SetupScreen() {
   const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(
     settings.selectedCategories ?? ['pais', 'nome', 'cor', 'animal', 'objeto']
   );
+  const [categoriesPerRound, setCategoriesPerRound] = useState(settings.categoriesPerRound ?? 1);
+  const [repeatLetters, setRepeatLetters] = useState(settings.repeatLetters ?? false);
   const [accent, setAccent] = useState<AccentColor>(settings.accentColor ?? 'purple');
   const [theme, setTheme] = useState<ThemeOption>(settings.theme ?? 'system');
   const [error, setError] = useState('');
@@ -69,13 +71,14 @@ export function SetupScreen() {
     if (new Set(names).size !== names.length) { setError('Os nomes dos jogadores devem ser únicos.'); return; }
     setError('');
 
-    saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound, noTimer, difficulty, selectedCategories, accentColor: accent, theme });
+    saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound, noTimer, difficulty, selectedCategories, categoriesPerRound, repeatLetters, accentColor: accent, theme });
 
     const config: GameConfig = {
       players: players.map(p => ({ ...p, name: p.name.trim() })),
       teams: [], teamMode: false,
       timePerRound, voiceEnabled: voiceEnabled && speechSupported,
       examplesEnabled, noTimer, difficulty, selectedCategories,
+      categoriesPerRound, repeatLetters,
     };
 
     dispatch({ type: 'START_GAME', payload: config });
@@ -161,6 +164,24 @@ export function SetupScreen() {
           </div>
           <div className="options-list">
             <Toggle checked={noTimer} onChange={setNoTimer} label="Sem timer" description="Ideal para crianças pequenas" />
+            <div className="option-divider" />
+            <Toggle checked={repeatLetters} onChange={setRepeatLetters} label="Repetir letras" description="Continua após esgotar o alfabeto" />
+            <div className="option-divider" />
+            <div className="option-row">
+              <div>
+                <div className="toggle-label">Categorias por ronda</div>
+                <div className="toggle-desc">Quantas categorias sortear de cada vez</div>
+              </div>
+              <div className="cats-per-round-selector">
+                {[1, 2, 3].map(n => (
+                  <button
+                    key={n}
+                    className={`cats-per-round-btn ${categoriesPerRound === n ? 'active' : ''}`}
+                    onClick={() => setCategoriesPerRound(n)}
+                  >{n}</button>
+                ))}
+              </div>
+            </div>
             <div className="option-divider" />
             <Toggle checked={voiceEnabled} onChange={setVoiceEnabled} label="Voz automática"
               description={speechSupported ? 'Anuncia a letra' : 'Não suportado neste browser'}

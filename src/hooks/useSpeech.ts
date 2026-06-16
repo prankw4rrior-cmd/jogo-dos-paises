@@ -1,24 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '@/context/GameContext';
 import {
-  announceRound,
-  cancelSpeech,
-  isSpeechSupported,
-  preloadVoices,
+  announceRound, cancelSpeech, isSpeechSupported, preloadVoices,
 } from '@/services/speechService';
 
-/**
- * Anuncia a letra quando phase='announcing'.
- * Após o anúncio, despacha START_PLAYING.
- */
 export function useSpeech() {
   const { state, dispatch } = useGame();
   const hasAnnouncedRef = useRef(false);
   const currentLetterRef = useRef('');
 
-  useEffect(() => {
-    void preloadVoices();
-  }, []);
+  useEffect(() => { void preloadVoices(); }, []);
 
   useEffect(() => {
     const { phase, config, currentLetter } = state;

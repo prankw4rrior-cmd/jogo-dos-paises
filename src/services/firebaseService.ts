@@ -1,12 +1,5 @@
-/**
- * Serviço Firebase para modo multijogador online.
- * Suporta dois modos: 'team' (equipa) e 'versus' (1v1).
- */
-
 import { initializeApp } from 'firebase/app';
-import {
-  getDatabase, ref, set, get, onValue, update, off,
-} from 'firebase/database';
+import { getDatabase, ref, set, get, onValue, update, off } from 'firebase/database';
 import type { CategoryKey } from '@/types';
 
 const firebaseConfig = {
@@ -22,10 +15,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ─── Tipos ──────────────────────────────────────────────────────────────
-
 export type RoomMode = 'team' | 'versus';
 export type OnlinePhase = 'waiting' | 'countdown' | 'playing' | 'scoring' | 'finished';
+
+export interface OnlineConfig {
+  timePerRound: number;
+  selectedCategories: CategoryKey[];
+  categoriesPerRound: number;
+}
 
 export interface OnlinePlayer {
   id: string;
@@ -37,7 +34,13 @@ export interface OnlinePlayer {
 
 export interface PlayerAnswer {
   text: string;
-  status: 'pending' | 'correct' | 'wrong' | 'gaveup'; // pending = ainda a tentar
+  status: 'pending' | 'correct' | 'wrong' | 'gaveup';
+}
+
+export interface ChatMessage {
+  playerId: string;
+  emoji: string;
+  ts: number;
 }
 
 export interface OnlineRoom {
@@ -46,17 +49,16 @@ export interface OnlineRoom {
   hostId: string;
   phase: OnlinePhase;
   currentLetter: string;
-  currentCategory: CategoryKey;
+  currentCategories: CategoryKey[];
   round: number;
-  timePerRound: number;
+  config: OnlineConfig;
   usedLetters: string[];
   remainingLetters: string[];
   players: Record<string, OnlinePlayer>;
-  answers: Record<string, PlayerAnswer>; // playerId → resposta da ronda actual
+  answers: Record<string, PlayerAnswer>;
+  chat: Record<string, ChatMessage>;
   createdAt: number;
 }
-
-// ─── Código de sala ─────────────────────────────────────────────────────
 
 export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -65,15 +67,13 @@ export function generateRoomCode(): string {
   return code;
 }
 
-// ─── Criar sala ─────────────────────────────────────────────────────────
-
 export async function createRoom(
   player: OnlinePlayer,
   mode: RoomMode,
-  timePerRound: number,
+  config: OnlineConfig,
   remainingLetters: string[],
   firstLetter: string,
-  firstCategory: CategoryKey
+  firstCategories: CategoryKey[]
 ): Promise<string> {
   let code = generateRoomCode();
   let attempts = 0;
@@ -85,18 +85,13 @@ export async function createRoom(
   }
 
   const room: OnlineRoom = {
-    code,
-    mode,
-    hostId: player.id,
-    phase: 'waiting',
-    currentLetter: firstLetter,
-    currentCategory: firstCategory,
-    round: 1,
-    timePerRound,
+    code, mode, hostId: player.id, phase: 'waiting',
+    currentLetter: firstLetter, currentCategories: firstCategories,
+    round: 1, config,
     usedLetters: [firstLetter],
     remainingLetters: remainingLetters.filter(l => l !== firstLetter),
     players: { [player.id]: player },
-    answers: {},
+    answers: {}, chat: {},
     createdAt: Date.now(),
   };
 
@@ -104,22 +99,16 @@ export async function createRoom(
   return code;
 }
 
-// ─── Entrar numa sala ───────────────────────────────────────────────────
-
 export async function joinRoom(code: string, player: OnlinePlayer): Promise<OnlineRoom | null> {
   const roomRef = ref(db, `rooms/${code.toUpperCase()}`);
   const snapshot = await get(roomRef);
   if (!snapshot.exists()) return null;
-
   const room = snapshot.val() as OnlineRoom;
   if (room.phase !== 'waiting') return null;
-  if (Object.keys(room.players).length >= 2) return null; // máx 2 jogadores
-
+  if (Object.keys(room.players).length >= 2) return null;
   await update(ref(db, `rooms/${code.toUpperCase()}/players`), { [player.id]: player });
   return { ...room, players: { ...room.players, [player.id]: player } };
 }
-
-// ─── Observar sala ──────────────────────────────────────────────────────
 
 export function watchRoom(code: string, callback: (room: OnlineRoom | null) => void): () => void {
   const roomRef = ref(db, `rooms/${code}`);
@@ -128,8 +117,6 @@ export function watchRoom(code: string, callback: (room: OnlineRoom | null) => v
   });
   return () => off(roomRef);
 }
-
-// ─── Acções ─────────────────────────────────────────────────────────────
 
 export async function startOnlineGame(code: string): Promise<void> {
   await update(ref(db, `rooms/${code}`), { phase: 'countdown' });
@@ -140,19 +127,29 @@ export async function setOnlinePhase(code: string, phase: OnlinePhase): Promise<
 }
 
 export async function nextOnlineRound(
-  code: string,
-  nextLetter: string,
-  nextCategory: CategoryKey,
-  usedLetters: string[],
-  remainingLetters: string[],
-  round: number
+  code: string, nextLetter: string, nextCategories: CategoryKey[],
+  usedLetters: string[], remainingLetters: string[], round: number
 ): Promise<void> {
   await update(ref(db, `rooms/${code}`), {
+    phase: 'countdown', currentLetter: nextLetter, currentCategories: nextCategories,
+    usedLetters, remainingLetters, round, answers: {},
+  });
+}
+
+export async function rematch(code: string, firstLetter: string, firstCategories: CategoryKey[], remainingLetters: string[]): Promise<void> {
+  // Reset scores e reinicia o jogo
+  const snapshot = await get(ref(db, `rooms/${code}/players`));
+  if (!snapshot.exists()) return;
+  const players = snapshot.val() as Record<string, OnlinePlayer>;
+  const resetPlayers: Record<string, OnlinePlayer> = {};
+  for (const [id, p] of Object.entries(players)) {
+    resetPlayers[id] = { ...p, score: 0 };
+  }
+  await update(ref(db, `rooms/${code}`), {
     phase: 'countdown',
-    currentLetter: nextLetter,
-    currentCategory: nextCategory,
-    usedLetters, remainingLetters, round,
-    answers: {},
+    currentLetter: firstLetter, currentCategories: firstCategories,
+    round: 1, usedLetters: [firstLetter], remainingLetters, answers: {}, chat: {},
+    players: resetPlayers,
   });
 }
 
@@ -160,16 +157,19 @@ export async function endOnlineGame(code: string): Promise<void> {
   await update(ref(db, `rooms/${code}`), { phase: 'finished' });
 }
 
-/** Submete ou actualiza a resposta de um jogador */
 export async function setPlayerAnswer(code: string, playerId: string, answer: PlayerAnswer): Promise<void> {
   await set(ref(db, `rooms/${code}/answers/${playerId}`), answer);
 }
 
-/** Adiciona pontos a um jogador */
 export async function addScore(code: string, playerId: string, delta: number): Promise<void> {
   const snapshot = await get(ref(db, `rooms/${code}/players/${playerId}/score`));
   const current = (snapshot.val() as number) ?? 0;
   await set(ref(db, `rooms/${code}/players/${playerId}/score`), Math.max(0, current + delta));
+}
+
+export async function sendChatEmoji(code: string, playerId: string, emoji: string): Promise<void> {
+  const ts = Date.now();
+  await set(ref(db, `rooms/${code}/chat/${playerId}_${ts}`), { playerId, emoji, ts });
 }
 
 export async function deleteRoom(code: string): Promise<void> {

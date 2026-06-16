@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   noTimer: false,
   difficulty: 'normal',
   selectedCategories: ['pais', 'nome', 'cor', 'animal', 'objeto'],
+  categoriesPerRound: 1,
+  repeatLetters: false,
 };
 
 function safeGet<T>(key: string, fallback: T): T {

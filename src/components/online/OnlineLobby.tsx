@@ -3,24 +3,40 @@ import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Logo } from '@/components/ui/Logo';
+import { Toggle } from '@/components/ui/Toggle';
 import {
   createRoom, joinRoom, watchRoom, startOnlineGame, deleteRoom,
-  type OnlineRoom, type OnlinePlayer, type RoomMode,
+  type OnlineRoom, type OnlinePlayer, type RoomMode, type OnlineConfig,
 } from '@/services/firebaseService';
 import { ALPHABET_PT, pickRandomLetter, removeLetter } from '@/utils/alphabet';
 import { OnlineGame } from './OnlineGame';
 import type { CategoryKey } from '@/types';
 import './OnlineLobby.css';
 
-const PLAYER_COLORS = ['#6c63ff','#ff6b9d'];
+const PLAYER_COLORS = ['#6c63ff', '#ff6b9d'];
 const DEFAULT_EMOJIS = ['😀','😎','🤩','🥳','🦁','🐯','🐻','🦊'];
-const ALL_CATS: CategoryKey[] = ['pais','nome','cor','animal','objeto'];
+const ALL_CATS: CategoryKey[] = ['pais','nome','cor','animal','objeto','fruta','cidade','profissao','marca','filme'];
+const CAT_LABELS: Record<CategoryKey, string> = {
+  pais:'País', nome:'Nome', cor:'Cor', animal:'Animal', objeto:'Objeto',
+  fruta:'Fruta', cidade:'Cidade', profissao:'Profissão', marca:'Marca', filme:'Filme',
+};
 
 function generatePlayerId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-type LobbyScreen = 'menu' | 'mode' | 'create' | 'join' | 'waiting' | 'game';
+function pickCategories(selected: CategoryKey[], count: number): CategoryKey[] {
+  const pool = [...selected];
+  const n = Math.min(count, pool.length);
+  const result: CategoryKey[] = [];
+  while (result.length < n && pool.length > 0) {
+    const idx = Math.floor(Math.random() * pool.length);
+    result.push(pool.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
+type LobbyScreen = 'menu' | 'mode' | 'config' | 'join' | 'waiting' | 'game';
 
 export function OnlineLobby() {
   const { dispatch } = useGame();
@@ -34,17 +50,19 @@ export function OnlineLobby() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Observar sala
+  // Config da sala
+  const [timePerRound, setTimePerRound] = useState(60);
+  const [selectedCats, setSelectedCats] = useState<CategoryKey[]>(['pais','nome','cor','animal','objeto']);
+  const [catsPerRound, setCatsPerRound] = useState(1);
+  const [noTimer, setNoTimer] = useState(false);
+
   useEffect(() => {
     if (!room?.code) return;
     const stop = watchRoom(room.code, (updated) => {
       if (updated) {
         setRoom(updated);
-        if (updated.phase !== 'waiting' && screen === 'waiting') {
-          setScreen('game');
-        }
+        if (updated.phase !== 'waiting' && screen === 'waiting') setScreen('game');
       } else if (screen !== 'menu') {
-        // Sala apagada
         setError('A sala foi encerrada.');
         setScreen('menu');
         setRoom(null);
@@ -54,24 +72,38 @@ export function OnlineLobby() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.code]);
 
+  function toggleCat(cat: CategoryKey) {
+    setSelectedCats(prev =>
+      prev.includes(cat)
+        ? prev.length > 1 ? prev.filter(c => c !== cat) : prev
+        : [...prev, cat]
+    );
+  }
+
   async function handleCreate() {
     if (playerName.trim().length < 2) { setError('Nome deve ter pelo menos 2 letras.'); return; }
     setLoading(true); setError('');
 
     const firstLetter = pickRandomLetter(ALPHABET_PT);
     const remaining = removeLetter(ALPHABET_PT, firstLetter);
-    const firstCategory = ALL_CATS[Math.floor(Math.random() * ALL_CATS.length)];
+    const firstCats = pickCategories(selectedCats, catsPerRound);
+    const cfg: OnlineConfig = {
+      timePerRound: noTimer ? 0 : timePerRound,
+      selectedCategories: selectedCats,
+      categoriesPerRound: catsPerRound,
+    };
 
     const player: OnlinePlayer = { id: myPlayerId, name: playerName.trim(), emoji: myEmoji, score: 0, isHost: true };
 
     try {
-      const code = await createRoom(player, mode, 60, remaining, firstLetter, firstCategory);
+      const code = await createRoom(player, mode, cfg, remaining, firstLetter, firstCats);
       setRoom({
         code, mode, hostId: player.id, phase: 'waiting',
-        currentLetter: firstLetter, currentCategory: firstCategory,
-        round: 1, timePerRound: 60,
+        currentLetter: firstLetter, currentCategories: firstCats,
+        round: 1, config: cfg,
         usedLetters: [firstLetter], remainingLetters: remaining,
-        players: { [player.id]: player }, answers: {}, createdAt: Date.now(),
+        players: { [player.id]: player }, answers: {}, chat: {},
+        createdAt: Date.now(),
       });
       setScreen('waiting');
     } catch {
@@ -105,13 +137,8 @@ export function OnlineLobby() {
   }
 
   async function handleLeave() {
-    if (room && room.hostId === myPlayerId) {
-      await deleteRoom(room.code);
-    }
-    setRoom(null);
-    setScreen('menu');
-    setRoomCode('');
-    setError('');
+    if (room && room.hostId === myPlayerId) await deleteRoom(room.code);
+    setRoom(null); setScreen('menu'); setRoomCode(''); setError('');
   }
 
   const amHost = room?.hostId === myPlayerId;
@@ -130,38 +157,32 @@ export function OnlineLobby() {
           <button className="online-back-btn" onClick={() => {
             if (screen === 'menu') dispatch({ type: 'GO_TO_SETUP' });
             else if (screen === 'mode') setScreen('menu');
+            else if (screen === 'config') setScreen('mode');
+            else if (screen === 'join') setScreen('menu');
             else handleLeave();
           }}>←</button>
           <Logo size="sm" showName={false} />
           <div style={{ width: 40 }} />
         </div>
 
-        {/* Menu principal */}
+        {/* Menu */}
         {screen === 'menu' && (
           <div className="animate-scale-in">
             <div className="online-title-section">
               <h1 className="online-title">Multijogador</h1>
               <p className="online-subtitle">2 jogadores, dispositivos diferentes</p>
             </div>
-
             <Card className="online-name-card">
               <div className="section-header">
                 <span className="section-icon">{myEmoji}</span>
                 <div><h2 className="section-title">O teu nome</h2></div>
               </div>
-              <input
-                className="online-name-input" type="text" value={playerName}
-                onChange={e => setPlayerName(e.target.value)} placeholder="Como te chamas?" maxLength={20}
-              />
+              <input className="online-name-input" type="text" value={playerName}
+                onChange={e => setPlayerName(e.target.value)} placeholder="Como te chamas?" maxLength={20} />
             </Card>
-
             <div className="online-actions">
-              <Button variant="primary" size="lg" fullWidth onClick={() => { setError(''); setScreen('mode'); }}>
-                🏠 Criar sala
-              </Button>
-              <Button variant="secondary" size="lg" fullWidth onClick={() => { setError(''); setScreen('join'); }}>
-                🚪 Entrar numa sala
-              </Button>
+              <Button variant="primary" size="lg" fullWidth onClick={() => { setError(''); setScreen('mode'); }}>🏠 Criar sala</Button>
+              <Button variant="secondary" size="lg" fullWidth onClick={() => { setError(''); setScreen('join'); }}>🚪 Entrar numa sala</Button>
             </div>
           </div>
         )}
@@ -170,26 +191,75 @@ export function OnlineLobby() {
         {screen === 'mode' && (
           <div className="animate-scale-in">
             <h1 className="online-title">Escolhe o modo</h1>
-            <p className="online-subtitle">Como vão jogar?</p>
-
             <button className={`mode-card ${mode === 'team' ? 'mode-active' : ''}`} onClick={() => setMode('team')}>
               <span className="mode-emoji">🤝</span>
               <div className="mode-text">
                 <div className="mode-title">Equipa</div>
-                <div className="mode-desc">Jogam juntos, vêem as respostas um do outro. Quando alguém acerta, ambos ganham o ponto e avançam.</div>
+                <div className="mode-desc">Jogam juntos. Quando alguém acerta, a equipa avança.</div>
               </div>
             </button>
-
             <button className={`mode-card ${mode === 'versus' ? 'mode-active' : ''}`} onClick={() => setMode('versus')}>
               <span className="mode-emoji">⚔️</span>
               <div className="mode-text">
                 <div className="mode-title">Contra (1v1)</div>
-                <div className="mode-desc">Respondem em segredo. Cada um vê se o outro já acertou. Quem acertar ganha o seu ponto.</div>
+                <div className="mode-desc">Cada um joga para si. Não vês a resposta do adversário.</div>
               </div>
             </button>
+            <Button variant="primary" size="lg" fullWidth onClick={() => { setError(''); setScreen('config'); }}>
+              Continuar →
+            </Button>
+          </div>
+        )}
+
+        {/* Configuração da sala */}
+        {screen === 'config' && (
+          <div className="animate-scale-in">
+            <h1 className="online-title">Configuração</h1>
+            <p className="online-subtitle">{mode === 'team' ? '🤝 Modo Equipa' : '⚔️ Modo Contra'}</p>
+
+            {/* Timer */}
+            <Card>
+              <div className="section-header">
+                <span className="section-icon">⏱️</span>
+                <div><h2 className="section-title">Tempo por ronda</h2></div>
+              </div>
+              <Toggle checked={noTimer} onChange={setNoTimer} label="Sem timer" description="Ideal para jogar sem pressão" />
+              {!noTimer && (
+                <div className="online-time-presets">
+                  {[30, 60, 90].map(t => (
+                    <button key={t} className={`time-preset-btn ${timePerRound === t ? 'active' : ''}`}
+                      onClick={() => setTimePerRound(t)}>{t}s</button>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Categorias por ronda */}
+            <Card>
+              <div className="section-header">
+                <span className="section-icon">🎯</span>
+                <div>
+                  <h2 className="section-title">Categorias por ronda</h2>
+                  <p className="section-desc">{selectedCats.length} seleccionadas</p>
+                </div>
+              </div>
+              <div className="online-cats-per-round">
+                {[1,2,3].map(n => (
+                  <button key={n} className={`cats-per-round-btn ${catsPerRound === n ? 'active' : ''}`}
+                    onClick={() => setCatsPerRound(n)}>{n}</button>
+                ))}
+              </div>
+              <div className="online-cat-grid">
+                {ALL_CATS.map(cat => (
+                  <button key={cat} className={`online-cat-chip ${selectedCats.includes(cat) ? 'active' : ''}`}
+                    onClick={() => toggleCat(cat)}>
+                    {CAT_LABELS[cat]}
+                  </button>
+                ))}
+              </div>
+            </Card>
 
             {error && <div className="online-error">{error}</div>}
-
             <Button variant="primary" size="lg" fullWidth onClick={handleCreate} disabled={loading}>
               {loading ? 'A criar…' : '🎮 Criar sala'}
             </Button>
@@ -201,20 +271,15 @@ export function OnlineLobby() {
           <div className="animate-scale-in">
             <h1 className="online-title">Entrar na sala</h1>
             <p className="online-subtitle">A jogar como <strong>{playerName || '?'}</strong></p>
-
             <Card>
               <div className="section-header">
                 <span className="section-icon">🔑</span>
                 <div><h2 className="section-title">Código da sala</h2></div>
               </div>
-              <input
-                className="online-code-input" type="text" value={roomCode}
-                onChange={e => setRoomCode(e.target.value.toUpperCase())} placeholder="Ex: XKJF" maxLength={4}
-              />
+              <input className="online-code-input" type="text" value={roomCode}
+                onChange={e => setRoomCode(e.target.value.toUpperCase())} placeholder="Ex: XKJF" maxLength={4} />
             </Card>
-
             {error && <div className="online-error">{error}</div>}
-
             <Button variant="primary" size="lg" fullWidth onClick={handleJoin} disabled={loading}>
               {loading ? 'A entrar…' : '🚪 Entrar'}
             </Button>
@@ -229,7 +294,6 @@ export function OnlineLobby() {
               <span className="room-code-value">{room.code}</span>
               <span className="room-code-hint">Partilha este código com o outro jogador</span>
             </div>
-
             <Card>
               <div className="section-header">
                 <span className="section-icon">👥</span>
@@ -258,19 +322,25 @@ export function OnlineLobby() {
               </div>
             </Card>
 
-            {error && <div className="online-error">{error}</div>}
+            {/* Resumo da config */}
+            <Card padding="sm">
+              <div className="config-summary">
+                <span>{room.config.timePerRound === 0 ? '♾️ Sem timer' : `⏱️ ${room.config.timePerRound}s`}</span>
+                <span>🎯 {room.config.categoriesPerRound} categoria{room.config.categoriesPerRound > 1 ? 's' : ''}/ronda</span>
+                <span>📂 {room.config.selectedCategories.length} categorias activas</span>
+              </div>
+            </Card>
 
+            {error && <div className="online-error">{error}</div>}
             {amHost ? (
               <Button variant="primary" size="lg" fullWidth onClick={handleStart} disabled={players.length < 2}>
                 {players.length < 2 ? 'À espera de jogador…' : '🎮 Iniciar jogo'}
               </Button>
             ) : (
               <div className="waiting-hint animate-fade-in">
-                <span className="pulse-dot" />
-                À espera que o host inicie…
+                <span className="pulse-dot" />À espera que o host inicie…
               </div>
             )}
-
             <Button variant="ghost" size="sm" onClick={handleLeave}>Sair da sala</Button>
           </div>
         )}
