@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import './TimeSelector.css';
 
-const PRESETS = [30, 60, 90];
+const PRESETS = [10, 30, 60, 90];
+const PRESET_LABELS: Record<number, string> = { 10: '⚡10s' };
 
 interface TimeSelectorProps {
   value: number;
@@ -37,10 +38,10 @@ export function TimeSelector({ value, onChange }: TimeSelectorProps) {
         {PRESETS.map((s) => (
           <button
             key={s}
-            className={`time-preset-btn ${!showCustom && value === s ? 'active' : ''}`}
+            className={`time-preset-btn ${!showCustom && value === s ? 'active' : ''} ${s === 10 ? 'time-preset-lightning' : ''}`}
             onClick={() => handlePreset(s)}
           >
-            {s}s
+            {PRESET_LABELS[s] ?? `${s}s`}
           </button>
         ))}
         <button

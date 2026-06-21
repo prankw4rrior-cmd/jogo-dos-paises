@@ -59,6 +59,8 @@ export interface GameConfig {
   selectedCategories: CategoryKey[];
   categoriesPerRound: number;   // quantas categorias por ronda (1–5)
   repeatLetters: boolean;       // permitir repetir letras após esgotar o alfabeto
+  powerUpsEnabled: boolean;     // activar dicas e tempo extra
+  lightningMode: boolean;       // modo relâmpago (10s fixo, sem power-ups)
 }
 
 // ─── Resposta de uma ronda ─────────────────────────────────────────────────
@@ -86,6 +88,7 @@ export type GamePhase = 'countdown' | 'announcing' | 'playing' | 'paused' | 'sco
 export type AppScreen = 'setup' | 'game' | 'results' | 'stats' | 'about' | 'online';
 export type ThemeOption = 'system' | 'light' | 'dark';
 export type AccentColor = 'purple' | 'blue' | 'green' | 'orange' | 'pink';
+export type FontSize = 'small' | 'medium' | 'large' | 'xlarge';
 
 export interface GameState {
   screen: AppScreen;
@@ -100,6 +103,19 @@ export interface GameState {
   usedLetters: string[];
   remainingLetters: string[];
   history: RoundHistory[];           // histórico de todas as rondas
+  hintUsedThisRound: boolean;
+  extraTimeUses: Record<string, number>; // playerId → vezes que usou tempo extra
+  hintUses: Record<string, number>;      // playerId → vezes que usou dica
+}
+
+// ─── Conquistas ─────────────────────────────────────────────────────────────
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  unlockedAt: string | null; // ISO date, null = ainda não desbloqueada
 }
 
 // ─── Estatísticas persistidas ──────────────────────────────────────────────
@@ -117,6 +133,9 @@ export interface AppStats {
   players: Record<string, PlayerStats>;
   lettersUsed: string[];
   lastPlayed: string | null;
+  achievements: Record<string, string>; // achievementId → ISO date desbloqueada
+  currentStreak: number;   // jogos seguidos sem desistir de nenhuma ronda
+  bestStreak: number;
 }
 
 // ─── Definições persistidas ────────────────────────────────────────────────
@@ -132,6 +151,11 @@ export interface AppSettings {
   selectedCategories: CategoryKey[];
   categoriesPerRound: number;
   repeatLetters: boolean;
+  powerUpsEnabled: boolean;
+  lightningMode: boolean;
+  fontSize: FontSize;
+  highContrast: boolean;
+  colorBlindMode: boolean;
 }
 
 // ─── Actions do Reducer ────────────────────────────────────────────────────
@@ -147,6 +171,8 @@ export type GameAction =
   | { type: 'START_SCORING' }
   | { type: 'SKIP_LETTER' }
   | { type: 'SAVE_ROUND_HISTORY'; payload: RoundHistory }
+  | { type: 'USE_HINT'; payload: { playerId: string } }
+  | { type: 'USE_EXTRA_TIME'; payload: { playerId: string } }
   | { type: 'ADD_POINT'; payload: { playerId: string } }
   | { type: 'REMOVE_POINT'; payload: { playerId: string } }
   | { type: 'NEXT_ROUND' }

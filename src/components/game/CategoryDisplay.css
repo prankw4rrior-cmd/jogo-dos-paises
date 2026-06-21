@@ -7,6 +7,17 @@
   transition: all var(--transition);
 }
 
+/* Modo daltónico: borda mais grossa e padrão tracejado para distinguir sem depender só da cor */
+[data-colorblind='true'] .category-display {
+  border-width: 3px;
+  border-style: double;
+}
+
+[data-colorblind='true'] .category-multi-item {
+  border-left-width: 5px;
+  border-left-style: dashed;
+}
+
 .category-announcing {
   opacity: 0.6;
 }

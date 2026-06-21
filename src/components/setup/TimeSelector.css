@@ -6,7 +6,7 @@
 
 .time-presets {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
 }
 
@@ -63,4 +63,17 @@
 .time-custom-unit {
   font-size: 13px;
   color: var(--text-tertiary);
+}
+
+.time-preset-lightning {
+  background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(249,115,22,0.1));
+  border-color: rgba(251,191,36,0.3);
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.time-preset-lightning.active {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+  border-color: #fbbf24;
+  color: white;
 }

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Podium } from './Podium';
 import { ScoreTable } from './ScoreTable';
 import { Confetti } from '@/components/ui/Confetti';
+import { AchievementToast } from '@/components/ui/AchievementToast';
 import { announceWinner, cancelSpeech } from '@/services/speechService';
 import './ResultsScreen.css';
 
@@ -11,6 +12,17 @@ export function ResultsScreen() {
   const { state, dispatch } = useGame();
   const { config, scores } = state;
   const announcedRef = useRef(false);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem('jdp_new_achievements');
+    if (raw) {
+      try {
+        setNewAchievements(JSON.parse(raw));
+      } catch { /* ignore */ }
+      sessionStorage.removeItem('jdp_new_achievements');
+    }
+  }, []);
 
   // Ordenar jogadores por pontuação decrescente
   const ranked = [...config.players]
@@ -35,6 +47,13 @@ export function ResultsScreen() {
     <div className="results-screen">
       <div className="app-bg" />
       <Confetti />
+
+      {newAchievements.length > 0 && (
+        <AchievementToast
+          achievementIds={newAchievements}
+          onDone={() => setNewAchievements([])}
+        />
+      )}
 
       <div className="results-content">
 

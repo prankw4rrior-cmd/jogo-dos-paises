@@ -227,3 +227,52 @@
   gap: 10px;
   justify-content: center;
 }
+
+/* Conquistas */
+.achievements-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+}
+
+.achievement-unlocked {
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+  border: 1px solid rgba(251,191,36,0.2);
+}
+
+.achievement-locked {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  opacity: 0.5;
+}
+
+.achievement-item-emoji {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.achievement-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.achievement-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.achievement-item-desc {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}

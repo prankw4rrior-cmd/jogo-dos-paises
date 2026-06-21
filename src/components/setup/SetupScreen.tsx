@@ -8,7 +8,8 @@ import { PlayerInput } from './PlayerInput';
 import { TimeSelector } from './TimeSelector';
 import { CategorySelector } from './CategorySelector';
 import { ThemeSelector, applyAccent } from './ThemeSelector';
-import type { Player, GameConfig, CategoryKey, Difficulty, AccentColor, ThemeOption } from '@/types';
+import { AccessibilitySelector } from './AccessibilitySelector';
+import type { Player, GameConfig, CategoryKey, Difficulty, AccentColor, ThemeOption, FontSize } from '@/types';
 import { loadSettings, saveSettings } from '@/services/storageService';
 import { isSpeechSupported } from '@/services/speechService';
 import './SetupScreen.css';
@@ -38,8 +39,13 @@ export function SetupScreen() {
   );
   const [categoriesPerRound, setCategoriesPerRound] = useState(settings.categoriesPerRound ?? 1);
   const [repeatLetters, setRepeatLetters] = useState(settings.repeatLetters ?? false);
+  const [powerUpsEnabled, setPowerUpsEnabled] = useState(settings.powerUpsEnabled ?? false);
+  const [lightningMode, setLightningMode] = useState(settings.lightningMode ?? false);
   const [accent, setAccent] = useState<AccentColor>(settings.accentColor ?? 'purple');
   const [theme, setTheme] = useState<ThemeOption>(settings.theme ?? 'system');
+  const [fontSize, setFontSize] = useState<FontSize>(settings.fontSize ?? 'medium');
+  const [highContrast, setHighContrast] = useState(settings.highContrast ?? false);
+  const [colorBlindMode, setColorBlindMode] = useState(settings.colorBlindMode ?? false);
   const [error, setError] = useState('');
 
   const speechSupported = isSpeechSupported();
@@ -71,14 +77,14 @@ export function SetupScreen() {
     if (new Set(names).size !== names.length) { setError('Os nomes dos jogadores devem ser únicos.'); return; }
     setError('');
 
-    saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound, noTimer, difficulty, selectedCategories, categoriesPerRound, repeatLetters, accentColor: accent, theme });
+    saveSettings({ voiceEnabled, examplesEnabled, defaultTime: timePerRound, noTimer, difficulty, selectedCategories, categoriesPerRound, repeatLetters, powerUpsEnabled, lightningMode, accentColor: accent, theme, fontSize, highContrast, colorBlindMode });
 
     const config: GameConfig = {
       players: players.map(p => ({ ...p, name: p.name.trim() })),
       teams: [], teamMode: false,
       timePerRound, voiceEnabled: voiceEnabled && speechSupported,
       examplesEnabled, noTimer, difficulty, selectedCategories,
-      categoriesPerRound, repeatLetters,
+      categoriesPerRound, repeatLetters, powerUpsEnabled, lightningMode,
     };
 
     dispatch({ type: 'START_GAME', payload: config });
@@ -188,6 +194,10 @@ export function SetupScreen() {
               disabled={!speechSupported} />
             <div className="option-divider" />
             <Toggle checked={examplesEnabled} onChange={setExamplesEnabled} label="Exemplos no fim" description="Mostra sugestão após cada ronda" />
+            <div className="option-divider" />
+            <Toggle checked={powerUpsEnabled} onChange={setPowerUpsEnabled} label="Power-ups" description="Dicas e tempo extra durante o jogo" />
+            <div className="option-divider" />
+            <Toggle checked={lightningMode} onChange={setLightningMode} label="⚡ Modo relâmpago" description="Apenas 10 segundos por ronda" />
           </div>
         </Card>
 
@@ -198,6 +208,22 @@ export function SetupScreen() {
             <div><h2 className="section-title">Aparência</h2></div>
           </div>
           <ThemeSelector accent={accent} theme={theme} onAccentChange={setAccent} onThemeChange={setTheme} />
+        </Card>
+
+        {/* Acessibilidade */}
+        <Card className="animate-slide-up" style={{ animationDelay: '195ms' }}>
+          <div className="section-header">
+            <span className="section-icon">♿</span>
+            <div><h2 className="section-title">Acessibilidade</h2></div>
+          </div>
+          <AccessibilitySelector
+            fontSize={fontSize}
+            highContrast={highContrast}
+            colorBlindMode={colorBlindMode}
+            onFontSizeChange={setFontSize}
+            onHighContrastChange={setHighContrast}
+            onColorBlindChange={setColorBlindMode}
+          />
         </Card>
 
         {error && <div className="setup-error animate-slide-up">{error}</div>}

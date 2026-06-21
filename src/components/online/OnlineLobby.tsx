@@ -10,6 +10,7 @@ import {
 } from '@/services/firebaseService';
 import { ALPHABET_PT, pickRandomLetter, removeLetter } from '@/utils/alphabet';
 import { OnlineGame } from './OnlineGame';
+import { ConnectionBanner } from './ConnectionBanner';
 import type { CategoryKey } from '@/types';
 import './OnlineLobby.css';
 
@@ -151,6 +152,7 @@ export function OnlineLobby() {
   return (
     <div className="online-lobby">
       <div className="app-bg" />
+      <ConnectionBanner />
       <div className="online-content">
 
         <div className="online-header animate-slide-up">

@@ -1,12 +1,15 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
-import type { GameState, GameAction, GameConfig, CategoryKey, RoundHistory } from '@/types';
+import type { GameState, GameAction, GameConfig, CategoryKey } from '@/types';
 import { ALPHABET_PT, pickRandomLetter, removeLetter } from '@/utils/alphabet';
 import { loadSettings } from '@/services/storageService';
 import { getRandomExample } from '@/data/examples';
 
 const DEFAULT_CATS: CategoryKey[] = ['pais', 'nome', 'cor', 'animal', 'objeto'];
+const LIGHTNING_TIME = 10;
+const HINTS_PER_GAME = 3;
+const EXTRA_TIME_PER_GAME = 2;
+const EXTRA_TIME_SECONDS = 15;
 
-/** Sorteia N categorias únicas da lista seleccionada */
 function pickCategories(selected: CategoryKey[], count: number): CategoryKey[] {
   const pool = selected.length > 0 ? [...selected] : [...DEFAULT_CATS];
   const n = Math.min(count, pool.length);
@@ -18,7 +21,6 @@ function pickCategories(selected: CategoryKey[], count: number): CategoryKey[] {
   return result;
 }
 
-/** Obtém exemplos para as categorias sorteadas */
 function getExamplesForCategories(letter: string, cats: CategoryKey[]): Partial<Record<CategoryKey, string>> {
   const ex = getRandomExample(letter);
   if (!ex) return {};
@@ -29,17 +31,12 @@ function getExamplesForCategories(letter: string, cats: CategoryKey[]): Partial<
 
 const settings = loadSettings();
 const _first = pickRandomLetter(ALPHABET_PT);
-const _cats = pickCategories(
-  settings.selectedCategories ?? DEFAULT_CATS,
-  settings.categoriesPerRound ?? 1
-);
+const _cats = pickCategories(settings.selectedCategories ?? DEFAULT_CATS, settings.categoriesPerRound ?? 1);
 
 const INITIAL_STATE: GameState = {
   screen: 'setup',
   config: {
-    players: [],
-    teams: [],
-    teamMode: false,
+    players: [], teams: [], teamMode: false,
     timePerRound: settings.defaultTime,
     voiceEnabled: settings.voiceEnabled,
     examplesEnabled: settings.examplesEnabled,
@@ -48,6 +45,8 @@ const INITIAL_STATE: GameState = {
     selectedCategories: settings.selectedCategories ?? DEFAULT_CATS,
     categoriesPerRound: settings.categoriesPerRound ?? 1,
     repeatLetters: settings.repeatLetters ?? false,
+    powerUpsEnabled: settings.powerUpsEnabled ?? false,
+    lightningMode: settings.lightningMode ?? false,
   },
   currentLetter: _first,
   currentCategories: _cats,
@@ -59,35 +58,46 @@ const INITIAL_STATE: GameState = {
   usedLetters: [],
   remainingLetters: ALPHABET_PT,
   history: [],
+  hintUsedThisRound: false,
+  extraTimeUses: {},
+  hintUses: {},
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   const cfg = state.config;
   const cats = cfg.selectedCategories ?? DEFAULT_CATS;
   const perRound = cfg.categoriesPerRound ?? 1;
+  const effectiveTime = cfg.lightningMode ? LIGHTNING_TIME : cfg.timePerRound;
 
   switch (action.type) {
     case 'START_GAME': {
       const config: GameConfig = action.payload;
       const scores: Record<string, number> = {};
-      for (const p of config.players) scores[p.id] = 0;
+      const extraTimeUses: Record<string, number> = {};
+      const hintUses: Record<string, number> = {};
+      for (const p of config.players) {
+        scores[p.id] = 0;
+        extraTimeUses[p.id] = 0;
+        hintUses[p.id] = 0;
+      }
       const first = pickRandomLetter(ALPHABET_PT);
       const firstCats = pickCategories(config.selectedCategories, config.categoriesPerRound);
+      const time = config.lightningMode ? LIGHTNING_TIME : config.timePerRound;
       return {
         ...state, screen: 'game', config,
-        currentLetter: first,
-        currentCategories: firstCats,
+        currentLetter: first, currentCategories: firstCats,
         currentPlayerIndex: 0, round: 1, scores,
-        phase: 'countdown', timeRemaining: config.timePerRound,
+        phase: 'countdown', timeRemaining: time,
         usedLetters: [first],
         remainingLetters: removeLetter(ALPHABET_PT, first),
-        history: [],
+        history: [], hintUsedThisRound: false,
+        extraTimeUses, hintUses,
       };
     }
 
     case 'START_COUNTDOWN': return { ...state, phase: 'countdown' };
     case 'START_ANNOUNCING': return { ...state, phase: 'announcing' };
-    case 'START_PLAYING': return { ...state, phase: 'playing' };
+    case 'START_PLAYING': return { ...state, phase: 'playing', hintUsedThisRound: false };
     case 'PAUSE': return state.phase === 'playing' ? { ...state, phase: 'paused' } : state;
     case 'RESUME': return state.phase === 'paused' ? { ...state, phase: 'playing' } : state;
 
@@ -98,6 +108,28 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'START_SCORING': return { ...state, phase: 'scoring', timeRemaining: 0 };
+
+    case 'USE_HINT': {
+      const { playerId } = action.payload;
+      const used = state.hintUses[playerId] ?? 0;
+      if (used >= HINTS_PER_GAME || state.hintUsedThisRound) return state;
+      return {
+        ...state,
+        hintUsedThisRound: true,
+        hintUses: { ...state.hintUses, [playerId]: used + 1 },
+      };
+    }
+
+    case 'USE_EXTRA_TIME': {
+      const { playerId } = action.payload;
+      const used = state.extraTimeUses[playerId] ?? 0;
+      if (used >= EXTRA_TIME_PER_GAME || state.phase !== 'playing') return state;
+      return {
+        ...state,
+        timeRemaining: state.timeRemaining + EXTRA_TIME_SECONDS,
+        extraTimeUses: { ...state.extraTimeUses, [playerId]: used + 1 },
+      };
+    }
 
     case 'ADD_POINT': {
       const { playerId } = action.payload;
@@ -110,39 +142,30 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'SAVE_ROUND_HISTORY': {
-      const payload = action.payload as RoundHistory;
-      return { ...state, history: [...state.history, payload] };
+      return { ...state, history: [...state.history, action.payload] };
     }
 
     case 'NEXT_ROUND': {
-      // Verificar se há letras disponíveis
       let remaining = state.remainingLetters;
       let used = state.usedLetters;
-
       if (remaining.length === 0) {
         if (cfg.repeatLetters) {
-          // Recomeçar o alfabeto excluindo a letra actual
           remaining = removeLetter(ALPHABET_PT, state.currentLetter);
         } else {
           return { ...state, phase: 'finished', screen: 'results' };
         }
       }
-
       const letter = pickRandomLetter(remaining);
       const newRemaining = removeLetter(remaining, letter);
       const nextIdx = (state.currentPlayerIndex + 1) % cfg.players.length;
       const nextCats = pickCategories(cats, perRound);
-
       return {
         ...state,
-        currentLetter: letter,
-        currentCategories: nextCats,
-        currentPlayerIndex: nextIdx,
-        round: state.round + 1,
-        phase: 'countdown',
-        timeRemaining: cfg.timePerRound,
-        usedLetters: [...used, letter],
-        remainingLetters: newRemaining,
+        currentLetter: letter, currentCategories: nextCats,
+        currentPlayerIndex: nextIdx, round: state.round + 1,
+        phase: 'countdown', timeRemaining: effectiveTime,
+        usedLetters: [...used, letter], remainingLetters: newRemaining,
+        hintUsedThisRound: false,
       };
     }
 
@@ -160,14 +183,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const nextCats = pickCategories(cats, perRound);
       return {
         ...state,
-        currentLetter: letter,
-        currentCategories: nextCats,
-        currentPlayerIndex: nextIdx,
-        round: state.round + 1,
-        phase: 'countdown',
-        timeRemaining: cfg.timePerRound,
+        currentLetter: letter, currentCategories: nextCats,
+        currentPlayerIndex: nextIdx, round: state.round + 1,
+        phase: 'countdown', timeRemaining: effectiveTime,
         usedLetters: [...state.usedLetters, letter],
         remainingLetters: removeLetter(remaining, letter),
+        hintUsedThisRound: false,
       };
     }
 
@@ -176,14 +197,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESET': {
       const first = pickRandomLetter(ALPHABET_PT);
       const firstCats = pickCategories(cfg.selectedCategories, cfg.categoriesPerRound);
+      const extraTimeUses: Record<string, number> = {};
+      const hintUses: Record<string, number> = {};
+      for (const p of cfg.players) { extraTimeUses[p.id] = 0; hintUses[p.id] = 0; }
       return {
         ...INITIAL_STATE, config: cfg,
-        currentLetter: first,
-        currentCategories: firstCats,
+        currentLetter: first, currentCategories: firstCats,
         remainingLetters: removeLetter(ALPHABET_PT, first),
-        usedLetters: [first],
-        phase: 'countdown',
-        history: [],
+        usedLetters: [first], phase: 'countdown',
+        history: [], extraTimeUses, hintUses,
       };
     }
 
@@ -220,4 +242,4 @@ export function applyTheme(theme: 'light' | 'dark' | 'system'): void {
   root.setAttribute('data-theme', dark ? 'dark' : 'light');
 }
 
-export { getExamplesForCategories };
+export { getExamplesForCategories, HINTS_PER_GAME, EXTRA_TIME_PER_GAME, EXTRA_TIME_SECONDS, LIGHTNING_TIME };

@@ -10,6 +10,7 @@ import { Countdown } from './Countdown';
 import { LetterHistory } from './LetterHistory';
 import { AnswerInput } from './AnswerInput';
 import { RoundHistory } from './RoundHistory';
+import { PowerUps } from './PowerUps';
 import { Button } from '@/components/ui/Button';
 import { GameMenu } from '@/components/ui/GameMenu';
 import { useSpeech } from '@/hooks/useSpeech';
@@ -17,6 +18,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { cancelSpeech } from '@/services/speechService';
 import { recordGame } from '@/services/storageService';
 import { getRandomExample } from '@/data/examples';
+import { playCategorySound } from '@/services/soundService';
 import './GameScreen.css';
 
 export function GameScreen() {
@@ -63,7 +65,10 @@ export function GameScreen() {
     });
 
     if (isLastRound) {
-      recordGame(config.players, scores, usedLetters);
+      const unlocked = recordGame(config.players, scores, usedLetters);
+      if (unlocked.length > 0) {
+        sessionStorage.setItem('jdp_new_achievements', JSON.stringify(unlocked));
+      }
       dispatch({ type: 'END_GAME' });
     } else {
       dispatch({ type: 'NEXT_ROUND' });
@@ -84,6 +89,13 @@ export function GameScreen() {
   function handleResume() { dispatch({ type: 'RESUME' }); }
 
   useEffect(() => { return () => cancelSpeech(); }, []);
+
+  // Tocar som da categoria ao começar a jogar
+  useEffect(() => {
+    if (phase === 'playing' && currentCategories.length > 0) {
+      playCategorySound(currentCategories[0]);
+    }
+  }, [phase, currentCategories]);
 
   return (
     <div className="game-screen">
@@ -107,6 +119,7 @@ export function GameScreen() {
 
         {/* Progresso */}
         <div className="letter-progress animate-fade-in">
+          {config.lightningMode && <span className="lightning-badge">⚡</span>}
           <div className="letter-progress-bar">
             <div className="letter-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
@@ -131,6 +144,9 @@ export function GameScreen() {
           isScoring={isScoring}
           currentLetter={currentLetter}
         />
+
+        {/* Power-ups */}
+        <PowerUps isPlaying={isPlaying} />
 
         {/* Campo de resposta */}
         {isPlaying && (

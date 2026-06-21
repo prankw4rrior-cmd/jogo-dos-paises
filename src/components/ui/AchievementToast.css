@@ -1,0 +1,55 @@
+.achievement-toast {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 380px;
+  background: linear-gradient(135deg, var(--bg-card), color-mix(in srgb, var(--warning) 8%, var(--bg-card)));
+  border: 1.5px solid var(--warning);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-lg), 0 0 24px rgba(251,191,36,0.25);
+  z-index: 1002;
+}
+
+.achievement-toast-emoji {
+  font-size: 36px;
+  flex-shrink: 0;
+  animation: achievementPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes achievementPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.achievement-toast-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.achievement-toast-label {
+  font-size: 10px;
+  color: var(--warning);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.achievement-toast-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.achievement-toast-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}

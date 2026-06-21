@@ -1,0 +1,77 @@
+.update-prompt {
+  position: fixed;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), var(--shadow-accent);
+  padding: 14px 16px;
+  z-index: 1001;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.update-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.update-prompt-icon { font-size: 26px; flex-shrink: 0; }
+
+.update-prompt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.update-prompt-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.update-prompt-text span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.update-prompt-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.update-prompt-later, .update-prompt-now {
+  flex: 1;
+  height: 38px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition);
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.update-prompt-later {
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+}
+
+.update-prompt-later:hover { background: var(--bg-glass-hover); }
+
+.update-prompt-now {
+  background: var(--accent);
+  color: white;
+  box-shadow: var(--shadow-accent);
+}
+
+.update-prompt-now:hover { background: var(--accent-light); }

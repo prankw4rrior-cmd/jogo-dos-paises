@@ -1,0 +1,40 @@
+.connection-banner {
+  position: fixed;
+  top: calc(var(--safe-top) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 380px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.connection-bad {
+  background: var(--danger-bg);
+  border: 1px solid rgba(248,113,113,0.3);
+  color: var(--danger);
+}
+
+.connection-ok {
+  background: var(--success-bg);
+  border: 1px solid rgba(74,222,128,0.3);
+  color: var(--success);
+}
+
+.connection-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: pulse 1s ease-in-out infinite;
+}

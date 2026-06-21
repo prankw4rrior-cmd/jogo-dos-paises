@@ -7,7 +7,9 @@ import { StatsScreen } from '@/components/stats/StatsScreen';
 import { AboutScreen } from '@/components/about/AboutScreen';
 import { OnlineLobby } from '@/components/online/OnlineLobby';
 import { InstallBanner } from '@/components/ui/InstallBanner';
+import { UpdatePrompt } from '@/components/ui/UpdatePrompt';
 import { SplashScreen } from '@/components/ui/SplashScreen';
+import { PageTransition } from '@/components/ui/PageTransition';
 
 export function App() {
   const { state } = useGame();
@@ -17,13 +19,16 @@ export function App() {
   return (
     <>
       {showSplash && <SplashScreen onDone={handleSplashDone} />}
+      <UpdatePrompt />
       <InstallBanner />
-      {state.screen === 'setup'   && <SetupScreen />}
-      {state.screen === 'game'    && <GameScreen />}
-      {state.screen === 'results' && <ResultsScreen />}
-      {state.screen === 'stats'   && <StatsScreen />}
-      {state.screen === 'about'   && <AboutScreen />}
-      {state.screen === 'online'  && <OnlineLobby />}
+      <PageTransition transitionKey={state.screen}>
+        {state.screen === 'setup'   && <SetupScreen />}
+        {state.screen === 'game'    && <GameScreen />}
+        {state.screen === 'results' && <ResultsScreen />}
+        {state.screen === 'stats'   && <StatsScreen />}
+        {state.screen === 'about'   && <AboutScreen />}
+        {state.screen === 'online'  && <OnlineLobby />}
+      </PageTransition>
     </>
   );
 }

@@ -3,6 +3,7 @@ import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { loadStats, clearStats } from '@/services/storageService';
+import { ACHIEVEMENT_DEFS } from '@/data/achievements';
 import './StatsScreen.css';
 
 export function StatsScreen() {
@@ -91,6 +92,27 @@ export function StatsScreen() {
                 </div>
               </Card>
             )}
+
+            {/* Conquistas */}
+            <Card className="animate-slide-up" style={{ animationDelay: '220ms' }}>
+              <div className="stats-section-title">
+                Conquistas ({Object.keys(stats.achievements ?? {}).length}/{ACHIEVEMENT_DEFS.length})
+              </div>
+              <div className="achievements-grid">
+                {ACHIEVEMENT_DEFS.map((a) => {
+                  const unlocked = !!(stats.achievements ?? {})[a.id];
+                  return (
+                    <div key={a.id} className={`achievement-item ${unlocked ? 'achievement-unlocked' : 'achievement-locked'}`}>
+                      <span className="achievement-item-emoji">{unlocked ? a.emoji : '🔒'}</span>
+                      <div className="achievement-item-text">
+                        <span className="achievement-item-title">{a.title}</span>
+                        <span className="achievement-item-desc">{a.description}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
 
             {/* Limpar dados */}
             {!showConfirm ? (

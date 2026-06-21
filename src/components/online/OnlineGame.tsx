@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Countdown } from '@/components/game/Countdown';
 import { LetterDisplay } from '@/components/game/LetterDisplay';
 import { Confetti } from '@/components/ui/Confetti';
+import { ConnectionBanner } from './ConnectionBanner';
 import {
   setOnlinePhase, nextOnlineRound, endOnlineGame, rematch,
   setPlayerAnswer, addScore, watchRoom, sendChatEmoji,
@@ -14,6 +15,7 @@ import { startsWithLetter } from '@/services/dictionaryService';
 import { playPoint, playTimeUp, vibrateTimeUp } from '@/services/soundService';
 import { isRecognitionSupported, startRecognition, stopRecognition } from '@/services/recognitionService';
 import { announceRound, cancelSpeech, isSpeechSupported } from '@/services/speechService';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import type { CategoryKey } from '@/types';
 import './OnlineGame.css';
 
@@ -59,6 +61,7 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
   const [showChat, setShowChat] = useState(false);
   const [chatFlash, setChatFlash] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { isOnline, wasOffline, clearWasOffline } = useNetworkStatus();
 
   const phase = localRoom.phase;
   const mode = localRoom.mode;
@@ -223,6 +226,7 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
     return (
       <div className="online-game-screen">
         <div className="app-bg" />
+        <ConnectionBanner />
         <Confetti />
         <div className="online-game-content">
           <div className="og-finished-header">
@@ -256,7 +260,20 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
   return (
     <div className="online-game-screen">
       <div className="app-bg" />
+      <ConnectionBanner />
       {phase === 'countdown' && <Countdown onComplete={() => void handleCountdownComplete()} />}
+
+      {/* Indicador de ligação */}
+      {!isOnline && (
+        <div className="connection-banner connection-offline">
+          📡 Sem ligação à internet — a tentar reconectar…
+        </div>
+      )}
+      {isOnline && wasOffline && (
+        <div className="connection-banner connection-online" onAnimationEnd={clearWasOffline}>
+          ✓ Ligação restabelecida
+        </div>
+      )}
 
       {/* Flash de emoji do chat */}
       {chatFlash && (
