@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 /**
  * Detecta o estado da ligação à internet.
- * Útil para mostrar avisos e tentar reconectar no modo online.
+ * Único hook de rede — usado pelo ConnectionBanner e OnlineGame.
  */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -16,6 +16,7 @@ export function useOnlineStatus() {
     }
     function handleOffline() {
       setIsOnline(false);
+      setJustReconnected(false);
     }
 
     window.addEventListener('online', handleOnline);

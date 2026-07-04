@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Logo } from '@/components/ui/Logo';
 import { Toggle } from '@/components/ui/Toggle';
 import {
-  createRoom, joinRoom, watchRoom, startOnlineGame, deleteRoom,
+  createRoom, joinRoom, watchRoom, startOnlineGame, deleteRoom, removePlayerFromRoom,
   type OnlineRoom, type OnlinePlayer, type RoomMode, type OnlineConfig,
 } from '@/services/firebaseService';
 import { ALPHABET_PT, pickRandomLetter, removeLetter } from '@/utils/alphabet';
@@ -57,21 +57,33 @@ export function OnlineLobby() {
   const [catsPerRound, setCatsPerRound] = useState(1);
   const [noTimer, setNoTimer] = useState(false);
 
+  const stopWatchRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     if (!room?.code) return;
+
+    // Se já estamos no jogo, o OnlineGame tem o seu próprio listener — não duplicar
+    if (screen === 'game') return;
+
     const stop = watchRoom(room.code, (updated) => {
       if (updated) {
         setRoom(updated);
-        if (updated.phase !== 'waiting' && screen === 'waiting') setScreen('game');
-      } else if (screen !== 'menu') {
+        if (updated.phase !== 'waiting') {
+          setScreen('game');
+          // Parar este listener — o OnlineGame vai criar o seu
+          stop();
+          stopWatchRef.current = null;
+        }
+      } else {
         setError('A sala foi encerrada.');
         setScreen('menu');
         setRoom(null);
       }
     });
-    return stop;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room?.code]);
+
+    stopWatchRef.current = stop;
+    return () => { stop(); stopWatchRef.current = null; };
+  }, [room?.code, screen]);
 
   function toggleCat(cat: CategoryKey) {
     setSelectedCats(prev =>
@@ -138,7 +150,13 @@ export function OnlineLobby() {
   }
 
   async function handleLeave() {
-    if (room && room.hostId === myPlayerId) await deleteRoom(room.code);
+    if (room) {
+      if (room.hostId === myPlayerId) {
+        await deleteRoom(room.code);
+      } else {
+        await removePlayerFromRoom(room.code, myPlayerId);
+      }
+    }
     setRoom(null); setScreen('menu'); setRoomCode(''); setError('');
   }
 
@@ -161,7 +179,7 @@ export function OnlineLobby() {
             else if (screen === 'mode') setScreen('menu');
             else if (screen === 'config') setScreen('mode');
             else if (screen === 'join') setScreen('menu');
-            else handleLeave();
+            else void handleLeave();
           }}>←</button>
           <Logo size="sm" showName={false} />
           <div style={{ width: 40 }} />

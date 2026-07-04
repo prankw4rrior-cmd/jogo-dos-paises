@@ -243,3 +243,12 @@
   color: white;
   box-shadow: var(--shadow-accent);
 }
+
+.option-warning {
+  font-size: 12px;
+  color: var(--warning);
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-top: 4px;
+}

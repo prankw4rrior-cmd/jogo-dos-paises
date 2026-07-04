@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useGame } from '@/context/GameContext';
 import { cancelSpeech } from '@/services/speechService';
+import { recordGame } from '@/services/storageService';
 import './GameMenu.css';
 
 export function GameMenu() {
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
   const [open, setOpen] = useState(false);
 
   function handleRestart() {
@@ -16,6 +17,14 @@ export function GameMenu() {
   function handleSetup() {
     cancelSpeech();
     dispatch({ type: 'GO_TO_SETUP' });
+    setOpen(false);
+  }
+
+  function handleFinishNow() {
+    cancelSpeech();
+    const gaveUpAnyRound = state.history.some(h => h.answers.some(a => !a.valid));
+    recordGame(state.config.players, state.scores, state.usedLetters, { gaveUpAnyRound });
+    dispatch({ type: 'END_GAME' });
     setOpen(false);
   }
 
@@ -35,6 +44,16 @@ export function GameMenu() {
         <div className="game-menu-overlay" onClick={() => setOpen(false)}>
           <div className="game-menu-panel animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="game-menu-title">Menu</div>
+
+            {state.config.repeatLetters && (
+              <button className="game-menu-item" onClick={handleFinishNow}>
+                <span className="game-menu-item-icon">🏆</span>
+                <div>
+                  <div className="game-menu-item-label">Terminar jogo agora</div>
+                  <div className="game-menu-item-desc">Ver resultados com a pontuação actual</div>
+                </div>
+              </button>
+            )}
 
             <button className="game-menu-item" onClick={handleRestart}>
               <span className="game-menu-item-icon">🔄</span>

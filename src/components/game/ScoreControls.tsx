@@ -7,7 +7,11 @@ const PLAYER_COLORS = [
   '#60a5fa', '#f87171', '#a78bfa', '#34d399',
 ];
 
-export function ScoreControls() {
+interface ScoreControlsProps {
+  answerAlreadyScored?: boolean;
+}
+
+export function ScoreControls({ answerAlreadyScored = false }: ScoreControlsProps) {
   const { state, dispatch } = useGame();
   const { config, scores, currentPlayerIndex, phase } = state;
 
@@ -19,7 +23,7 @@ export function ScoreControls() {
         <span className="score-controls-title">Pontuações</span>
         {isScoring && (
           <span className="score-controls-hint animate-fade-in">
-            Ajusta os pontos
+            {answerAlreadyScored ? '✓ Ponto já atribuído — ajusta se necessário' : 'Ajusta os pontos'}
           </span>
         )}
       </div>

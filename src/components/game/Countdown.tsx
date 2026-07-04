@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './Countdown.css';
 
 interface CountdownProps {
@@ -7,15 +7,17 @@ interface CountdownProps {
 
 export function Countdown({ onComplete }: CountdownProps) {
   const [count, setCount] = useState(3);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (count <= 0) {
-      onComplete();
+      onCompleteRef.current();
       return;
     }
     const t = setTimeout(() => setCount(c => c - 1), 800);
     return () => clearTimeout(t);
-  }, [count, onComplete]);
+  }, [count]);
 
   return (
     <div className="countdown-overlay">

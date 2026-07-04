@@ -29,9 +29,8 @@ export function Podium({ ranked }: PodiumProps) {
     <div className="podium-wrapper animate-scale-in" style={{ animationDelay: '200ms' }}>
       {visualOrder.map((entry, visualIndex) => {
         if (!entry) return null;
-        const rank = ranked.indexOf(entry); // posição real (0, 1, 2)
-        const playerIndex = ranked.indexOf(entry);
-        const color = PLAYER_COLORS[playerIndex % PLAYER_COLORS.length];
+        const rank = ranked.indexOf(entry);
+        const color = PLAYER_COLORS[rank % PLAYER_COLORS.length];
         const delay = [150, 0, 300][visualIndex] ?? 0;
 
         return (

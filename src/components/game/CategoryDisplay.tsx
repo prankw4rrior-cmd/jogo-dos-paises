@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { CategoryKey } from '@/types';
 import { getRandomExample } from '@/data/examples';
-import { useGame } from '@/context/GameContext';
 import './CategoryDisplay.css';
 
 interface CategoryDisplayProps {
@@ -9,6 +8,7 @@ interface CategoryDisplayProps {
   isAnnouncing: boolean;
   isScoring: boolean;
   currentLetter: string;
+  examplesEnabled: boolean;
 }
 
 const CATEGORY_INFO: Record<CategoryKey, { label: string; emoji: string; color: string }> = {
@@ -24,9 +24,7 @@ const CATEGORY_INFO: Record<CategoryKey, { label: string; emoji: string; color: 
   filme:     { label: 'Filme',     emoji: '🎬', color: '#e879f9' },
 };
 
-export function CategoryDisplay({ categories, isAnnouncing, isScoring, currentLetter }: CategoryDisplayProps) {
-  const { state } = useGame();
-
+export function CategoryDisplay({ categories, isAnnouncing, isScoring, currentLetter, examplesEnabled }: CategoryDisplayProps) {
   // Gerar exemplos uma vez por ronda
   const examples = useMemo(() => {
     const ex = getRandomExample(currentLetter);
@@ -56,7 +54,7 @@ export function CategoryDisplay({ categories, isAnnouncing, isScoring, currentLe
         {!isScoring && (
           <div className="category-display-hint">Diz uma palavra com a letra acima</div>
         )}
-        {isScoring && state.config.examplesEnabled && examples[cat] && (
+        {isScoring && examplesEnabled && examples[cat] && (
           <div className="category-display-example animate-slide-up">
             <span className="category-display-example-label">Podia ser:</span>
             <span className="category-display-example-value">{examples[cat]}</span>
@@ -79,7 +77,7 @@ export function CategoryDisplay({ categories, isAnnouncing, isScoring, currentLe
           >
             <span className="category-multi-emoji">{info.emoji}</span>
             <span className="category-multi-label">{info.label}</span>
-            {isScoring && state.config.examplesEnabled && examples[cat] && (
+            {isScoring && examplesEnabled && examples[cat] && (
               <span className="category-multi-example">ex: {examples[cat]}</span>
             )}
           </div>

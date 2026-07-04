@@ -15,7 +15,6 @@ import { startsWithLetter } from '@/services/dictionaryService';
 import { playPoint, playTimeUp, vibrateTimeUp } from '@/services/soundService';
 import { isRecognitionSupported, startRecognition, stopRecognition } from '@/services/recognitionService';
 import { announceRound, cancelSpeech, isSpeechSupported } from '@/services/speechService';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import type { CategoryKey } from '@/types';
 import './OnlineGame.css';
 
@@ -61,7 +60,6 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
   const [showChat, setShowChat] = useState(false);
   const [chatFlash, setChatFlash] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { isOnline, wasOffline, clearWasOffline } = useNetworkStatus();
 
   const phase = localRoom.phase;
   const mode = localRoom.mode;
@@ -78,9 +76,22 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
   // Observar sala
   useEffect(() => {
     const stop = watchRoom(room.code, (updated) => {
-      if (updated) setLocalRoom(updated);
+      if (updated) {
+        // Detectar se o outro jogador saiu (sala ainda existe mas só tem 1 jogador)
+        const playerCount = Object.keys(updated.players).length;
+        if (playerCount < 2 && localRoom.phase !== 'finished' && Object.keys(localRoom.players).length === 2) {
+          // O outro jogador abandonou — terminar o jogo
+          setLocalRoom({ ...updated, phase: 'finished' });
+          return;
+        }
+        setLocalRoom(updated);
+      } else {
+        // Sala foi apagada (o host saiu) — voltar ao menu
+        onLeave();
+      }
     });
     return stop;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room.code]);
 
   // Mostrar emojis do chat
@@ -95,6 +106,14 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
       return () => clearTimeout(t);
     }
   }, [localRoom.chat, localRoom.players]);
+
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      cancelSpeech();
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   // Voz ao iniciar ronda
   useEffect(() => {
@@ -138,14 +157,30 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
     setAnswer('');
   }, [localRoom.currentLetter, localRoom.round]);
 
-  // Verificar se ambos terminaram → scoring
+  // Verificar quando a ronda deve avançar para scoring
   useEffect(() => {
     if (phase !== 'playing') return;
     const me = localRoom.answers?.[myPlayerId];
     const other = otherPlayer ? localRoom.answers?.[otherPlayer.id] : undefined;
-    const meDone = me && me.status !== 'pending';
-    const otherDone = !otherPlayer || (other && other.status !== 'pending');
-    if (meDone && otherDone) {
+
+    let shouldAdvance = false;
+
+    if (mode === 'team') {
+      // Modo equipa: avança quando QUALQUER jogador acerta
+      const anyCorrect =
+        me?.status === 'correct' || other?.status === 'correct';
+      // Ou quando ambos desistiram/erraram sem acertar
+      const meDone = !!(me && me.status !== 'pending');
+      const otherDone = !otherPlayer || !!(other && other.status !== 'pending');
+      shouldAdvance = anyCorrect || (meDone && otherDone);
+    } else {
+      // Modo contra: avança quando ambos terminaram (acertaram, erraram ou desistiram)
+      const meDone = !!(me && me.status !== 'pending');
+      const otherDone = !otherPlayer || !!(other && other.status !== 'pending');
+      shouldAdvance = meDone && otherDone;
+    }
+
+    if (shouldAdvance) {
       const t = setTimeout(() => void setOnlinePhase(room.code, 'scoring'), 800);
       return () => clearTimeout(t);
     }
@@ -223,12 +258,18 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
   if (phase === 'finished') {
     const sorted = [...players].sort((a, b) => b.score - a.score);
     const isTie = sorted.length === 2 && sorted[0].score === sorted[1].score;
+    const opponentLeft = players.length < 2;
     return (
       <div className="online-game-screen">
         <div className="app-bg" />
         <ConnectionBanner />
-        <Confetti />
+        {!opponentLeft && <Confetti />}
         <div className="online-game-content">
+          {opponentLeft && (
+            <div className="og-left-notice animate-scale-in">
+              ⚠️ O outro jogador saiu da sala. O jogo terminou.
+            </div>
+          )}
           <div className="og-finished-header">
             <div className="og-trophy">{mode === 'team' ? '🤝' : '🏆'}</div>
             <h1>Fim do jogo!</h1>
@@ -250,7 +291,9 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
               ))}
             </div>
           </Card>
-          <Button variant="primary" size="lg" fullWidth onClick={() => void handleRematch()}>🔄 Revanche</Button>
+          {!opponentLeft && (
+            <Button variant="primary" size="lg" fullWidth onClick={() => void handleRematch()}>🔄 Revanche</Button>
+          )}
           <Button variant="secondary" size="md" fullWidth onClick={onLeave}>Voltar ao menu</Button>
         </div>
       </div>
@@ -262,18 +305,6 @@ export function OnlineGame({ room, myPlayerId, onLeave }: OnlineGameProps) {
       <div className="app-bg" />
       <ConnectionBanner />
       {phase === 'countdown' && <Countdown onComplete={() => void handleCountdownComplete()} />}
-
-      {/* Indicador de ligação */}
-      {!isOnline && (
-        <div className="connection-banner connection-offline">
-          📡 Sem ligação à internet — a tentar reconectar…
-        </div>
-      )}
-      {isOnline && wasOffline && (
-        <div className="connection-banner connection-online" onAnimationEnd={clearWasOffline}>
-          ✓ Ligação restabelecida
-        </div>
-      )}
 
       {/* Flash de emoji do chat */}
       {chatFlash && (

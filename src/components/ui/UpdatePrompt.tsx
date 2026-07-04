@@ -13,27 +13,42 @@ export function UpdatePrompt() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
+    let cancelled = false;
+
     navigator.serviceWorker.getRegistration().then((reg) => {
-      if (!reg) return;
+      if (!reg || cancelled) return;
       registrationRef.current = reg;
 
       // Se já há um worker à espera, mostrar logo
       if (reg.waiting) {
         waitingWorkerRef.current = reg.waiting;
         setShow(true);
+        return;
       }
 
-      // Detectar quando um novo worker é encontrado
-      reg.addEventListener('updatefound', () => {
+      // Se há um worker a instalar, observar o seu estado
+      if (reg.installing) {
         const newWorker = reg.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener('statechange', () => {
+        const onStateChange = () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             waitingWorkerRef.current = newWorker;
             setShow(true);
           }
-        });
+        };
+        newWorker.addEventListener('statechange', onStateChange);
+      }
+
+      // Detectar quando um novo worker é encontrado no futuro
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        const onStateChange = () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            waitingWorkerRef.current = newWorker;
+            setShow(true);
+          }
+        };
+        newWorker.addEventListener('statechange', onStateChange);
       });
     });
 
@@ -42,7 +57,10 @@ export function UpdatePrompt() {
       registrationRef.current?.update();
     }, 30 * 60 * 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   function handleUpdate() {
@@ -51,12 +69,14 @@ export function UpdatePrompt() {
       window.location.reload();
       return;
     }
-    worker.postMessage({ type: 'SKIP_WAITING' });
-    worker.addEventListener('statechange', () => {
+    const onStateChange = () => {
       if (worker.state === 'activated') {
+        worker.removeEventListener('statechange', onStateChange);
         window.location.reload();
       }
-    });
+    };
+    worker.addEventListener('statechange', onStateChange);
+    worker.postMessage({ type: 'SKIP_WAITING' });
   }
 
   if (!show) return null;

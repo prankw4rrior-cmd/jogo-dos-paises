@@ -1,5 +1,6 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useGame } from '@/context/GameContext';
+import type { CategoryKey } from '@/types';
 import { TOTAL_LETTERS } from '@/utils/alphabet';
 import { LetterDisplay } from './LetterDisplay';
 import { TimerBar } from './TimerBar';
@@ -14,7 +15,7 @@ import { PowerUps } from './PowerUps';
 import { Button } from '@/components/ui/Button';
 import { GameMenu } from '@/components/ui/GameMenu';
 import { useSpeech } from '@/hooks/useSpeech';
-import { useTimer } from '@/hooks/useTimer';
+import { useTimer, resetGlobalTimer } from '@/hooks/useTimer';
 import { cancelSpeech } from '@/services/speechService';
 import { recordGame } from '@/services/storageService';
 import { getRandomExample } from '@/data/examples';
@@ -25,6 +26,9 @@ export function GameScreen() {
   const { state, dispatch } = useGame();
   const { phase, config, scores, round, usedLetters, remainingLetters, currentCategories, currentLetter } = state;
   const { noTimer } = useTimer();
+
+  // Guardar respostas da ronda actual
+  const [roundAnswers, setRoundAnswers] = useState<Array<{ category: CategoryKey; answer: string; valid: boolean }>>([]);
 
   useSpeech();
 
@@ -40,13 +44,17 @@ export function GameScreen() {
     ? ((totalPlayed % TOTAL_LETTERS) / TOTAL_LETTERS) * 100
     : (totalPlayed / TOTAL_LETTERS) * 100;
 
-  const handleCountdownComplete = useCallback(() => {
+  function handleCountdownComplete() {
     dispatch({ type: 'START_ANNOUNCING' });
-  }, [dispatch]);
+  }
+
+  // Resetar respostas ao mudar de ronda
+  useEffect(() => {
+    setRoundAnswers([]);
+  }, [currentLetter, round]);
 
   function handleNextRound() {
     cancelSpeech();
-    // Guardar histórico da ronda actual
     const currentPlayer = config.players[state.currentPlayerIndex];
     const ex = getRandomExample(currentLetter);
     const examples: Partial<Record<string, string>> = {};
@@ -59,13 +67,19 @@ export function GameScreen() {
         letter: currentLetter,
         playerName: currentPlayer?.name ?? '',
         categories: currentCategories,
-        answers: [],
+        answers: roundAnswers,
         examples,
       },
     });
 
     if (isLastRound) {
-      const unlocked = recordGame(config.players, scores, usedLetters);
+      // Incluir respostas da ronda actual (ainda não guardadas no history)
+      const allAnswers = [
+        ...state.history.flatMap(h => h.answers),
+        ...roundAnswers,
+      ];
+      const gaveUpAnyRound = allAnswers.some(a => !a.valid);
+      const unlocked = recordGame(config.players, scores, usedLetters, { gaveUpAnyRound });
       if (unlocked.length > 0) {
         sessionStorage.setItem('jdp_new_achievements', JSON.stringify(unlocked));
       }
@@ -88,7 +102,7 @@ export function GameScreen() {
   function handlePause() { dispatch({ type: 'PAUSE' }); }
   function handleResume() { dispatch({ type: 'RESUME' }); }
 
-  useEffect(() => { return () => cancelSpeech(); }, []);
+  useEffect(() => { return () => { cancelSpeech(); resetGlobalTimer(); }; }, []);
 
   // Tocar som da categoria ao começar a jogar
   useEffect(() => {
@@ -143,6 +157,7 @@ export function GameScreen() {
           isAnnouncing={isAnnouncing}
           isScoring={isScoring}
           currentLetter={currentLetter}
+          examplesEnabled={config.examplesEnabled}
         />
 
         {/* Power-ups */}
@@ -153,12 +168,17 @@ export function GameScreen() {
           <AnswerInput
             currentLetter={currentLetter}
             currentCategory={currentCategories[0]}
-            onValidAnswer={() => dispatch({ type: 'ADD_POINT', payload: { playerId: config.players[state.currentPlayerIndex]?.id ?? '' } })}
+            onValidAnswer={() => {
+              dispatch({ type: 'ADD_POINT', payload: { playerId: config.players[state.currentPlayerIndex]?.id ?? '' } });
+            }}
+            onAnswer={(answer, valid) => {
+              setRoundAnswers(prev => [...prev, { category: currentCategories[0], answer, valid }]);
+            }}
           />
         )}
 
         {/* Pontuações */}
-        <ScoreControls />
+        <ScoreControls answerAlreadyScored={roundAnswers.some(a => a.valid)} />
 
         {/* Histórico de letras */}
         <LetterHistory />

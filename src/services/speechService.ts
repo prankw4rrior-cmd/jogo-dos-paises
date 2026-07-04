@@ -102,19 +102,17 @@ export function cancelSpeech(): void {
  */
 export function preloadVoices(): Promise<void> {
   return new Promise((resolve) => {
-    if (!isSpeechSupported()) {
-      resolve();
-      return;
-    }
+    if (!isSpeechSupported()) { resolve(); return; }
 
     const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      resolve();
-      return;
-    }
+    if (voices.length > 0) { resolve(); return; }
 
-    window.speechSynthesis.onvoiceschanged = () => resolve();
-    // Timeout de segurança
-    setTimeout(resolve, 1500);
+    let resolved = false;
+    const handler = () => {
+      if (!resolved) { resolved = true; resolve(); }
+    };
+
+    window.speechSynthesis.addEventListener('voiceschanged', handler, { once: true });
+    setTimeout(() => { if (!resolved) { resolved = true; resolve(); } }, 1500);
   });
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getAchievementDef } from '@/data/achievements';
 import './AchievementToast.css';
 
@@ -10,19 +10,20 @@ interface AchievementToastProps {
 /** Mostra conquistas desbloqueadas, uma de cada vez */
 export function AchievementToast({ achievementIds, onDone }: AchievementToastProps) {
   const [index, setIndex] = useState(0);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
-    if (achievementIds.length === 0) { onDone(); return; }
+    if (achievementIds.length === 0) { onDoneRef.current(); return; }
     const t = setTimeout(() => {
       if (index < achievementIds.length - 1) {
         setIndex(i => i + 1);
       } else {
-        onDone();
+        onDoneRef.current();
       }
     }, 2800);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, achievementIds.length]);
+  }, [index, achievementIds]);
 
   if (achievementIds.length === 0) return null;
   const def = getAchievementDef(achievementIds[index]);

@@ -37,9 +37,11 @@ const DEFAULT_SETTINGS: AppSettings = {
 function safeGet<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return { ...fallback, ...JSON.parse(raw) } as T;
-  } catch { return fallback; }
+    // Clonar profundamente o fallback para nunca mutar o objecto partilhado do módulo
+    const clonedFallback = JSON.parse(JSON.stringify(fallback)) as T;
+    if (!raw) return clonedFallback;
+    return { ...clonedFallback, ...JSON.parse(raw) } as T;
+  } catch { return JSON.parse(JSON.stringify(fallback)) as T; }
 }
 
 function safeSet(key: string, value: unknown): void {
@@ -48,7 +50,7 @@ function safeSet(key: string, value: unknown): void {
 
 export function loadStats(): AppStats { return safeGet<AppStats>(KEYS.STATS, DEFAULT_STATS); }
 export function saveStats(stats: AppStats): void { safeSet(KEYS.STATS, stats); }
-export function clearStats(): void { safeSet(KEYS.STATS, DEFAULT_STATS); }
+export function clearStats(): void { safeSet(KEYS.STATS, JSON.parse(JSON.stringify(DEFAULT_STATS))); }
 export function loadSettings(): AppSettings { return safeGet<AppSettings>(KEYS.SETTINGS, DEFAULT_SETTINGS); }
 export function saveSettings(settings: Partial<AppSettings>): void {
   const current = loadSettings();
@@ -80,20 +82,23 @@ export function recordGame(
   const allLetters = new Set([...stats.lettersUsed, ...letters]);
   stats.lettersUsed = Array.from(allLetters);
 
-  let winnerId = '';
+  // Determinar vencedor(es) — em caso de empate, ninguém ganha "win" sozinho
   let maxScore = -1;
   for (const p of players) {
     const s = scores[p.id] ?? 0;
-    if (s > maxScore) { maxScore = s; winnerId = p.id; }
+    if (s > maxScore) maxScore = s;
   }
+  const winnerIds = players.filter(p => (scores[p.id] ?? 0) === maxScore).map(p => p.id);
+  const isTieGame = winnerIds.length > 1;
 
   for (const player of players) {
     const prev = stats.players[player.name] ?? { name: player.name, wins: 0, gamesPlayed: 0, bestScore: 0, totalPoints: 0 };
     const playerScore = scores[player.id] ?? 0;
+    const wonOutright = !isTieGame && winnerIds.includes(player.id);
     stats.players[player.name] = {
       ...prev,
       gamesPlayed: prev.gamesPlayed + 1,
-      wins: prev.wins + (player.id === winnerId ? 1 : 0),
+      wins: prev.wins + (wonOutright ? 1 : 0),
       bestScore: Math.max(prev.bestScore, playerScore),
       totalPoints: prev.totalPoints + playerScore,
     };

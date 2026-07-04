@@ -23,6 +23,16 @@ function stopInterval() {
   }
 }
 
+/** Reset completo do timer global — chamar ao sair do jogo ou reiniciar */
+export function resetGlobalTimer(): void {
+  stopInterval();
+  _endTime = null;
+  _fired = false;
+  _paused = false;
+  _remainingMs = 0;
+  _display = 0;
+}
+
 function startInterval() {
   stopInterval();
   _interval = setInterval(() => {
@@ -48,7 +58,7 @@ export function useTimer() {
   const isRunning = state.phase === 'playing';
   const isPaused = state.phase === 'paused';
   const noTimer = state.config.noTimer;
-  const duration = state.config.timePerRound;
+  const duration = state.config.lightningMode ? 10 : state.config.timePerRound;
   const [display, setDisplay] = useState(duration);
   const mountedRef = useRef(false);
 
@@ -72,32 +82,36 @@ export function useTimer() {
       return;
     }
 
-    if (isRunning) {
+    if (isPaused) {
+      // Pausar: guardar tempo restante e parar o intervalo
+      _paused = true;
+      _remainingMs = Math.max(0, (_endTime ?? 0) - Date.now());
+      stopInterval();
+    } else if (isRunning) {
       _paused = false;
       if (_endTime === null) {
+        // Início de nova ronda
         _endTime = Date.now() + duration * 1000;
         _fired = false;
         notifyListeners(duration);
-      } else if (isPaused) {
-        // retomar: ajustar endTime com o tempo que faltava
+      } else if (_remainingMs > 0) {
+        // Retomar após pausa
         _endTime = Date.now() + _remainingMs;
+        _remainingMs = 0;
       }
       startInterval();
-    } else if (isPaused) {
-      _paused = true;
-      _remainingMs = Math.max(0, _endTime! - Date.now());
-      stopInterval();
     } else {
       // announcing / scoring / countdown — resetar
       stopInterval();
       _endTime = null;
       _fired = false;
       _paused = false;
+      _remainingMs = 0;
       notifyListeners(duration);
       setDisplay(duration);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning, isPaused, state.phase]);
+  }, [isRunning, isPaused, state.phase, duration]);
 
   const percentage = duration > 0 ? (display / duration) * 100 : 100;
 

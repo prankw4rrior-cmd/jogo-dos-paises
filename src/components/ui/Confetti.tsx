@@ -30,6 +30,12 @@ export function Confetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
     // Criar partículas
     particlesRef.current = Array.from({ length: TOTAL }, () => ({
       x: Math.random() * canvas.width,
@@ -91,6 +97,7 @@ export function Confetti() {
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 

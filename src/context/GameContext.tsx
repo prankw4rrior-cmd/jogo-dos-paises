@@ -54,7 +54,7 @@ const INITIAL_STATE: GameState = {
   round: 1,
   scores: {},
   phase: 'countdown',
-  timeRemaining: settings.defaultTime,
+  timeRemaining: (settings.lightningMode ?? false) ? 10 : settings.defaultTime,
   usedLetters: [],
   remainingLetters: ALPHABET_PT,
   history: [],

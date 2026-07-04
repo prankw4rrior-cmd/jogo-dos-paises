@@ -11,18 +11,9 @@ export const ALPHABET_PT: string[] = [
 
 export const TOTAL_LETTERS = ALPHABET_PT.length;
 
-/** Embaralha um array (Fisher-Yates) sem modificar o original */
-export function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 /** Sorteia uma letra aleatória de um array de letras disponíveis */
 export function pickRandomLetter(remaining: string[]): string {
+  if (remaining.length === 0) return 'A'; // fallback defensivo
   const idx = Math.floor(Math.random() * remaining.length);
   return remaining[idx];
 }

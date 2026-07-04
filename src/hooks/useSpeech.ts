@@ -7,20 +7,20 @@ import {
 export function useSpeech() {
   const { state, dispatch } = useGame();
   const hasAnnouncedRef = useRef(false);
-  const currentLetterRef = useRef('');
+  const lastRoundRef = useRef(-1);
 
   useEffect(() => { void preloadVoices(); }, []);
 
   useEffect(() => {
-    const { phase, config, currentLetter } = state;
+    const { phase, config, currentLetter, round } = state;
 
     if (phase !== 'announcing') {
       hasAnnouncedRef.current = false;
       return;
     }
 
-    if (currentLetterRef.current === currentLetter && hasAnnouncedRef.current) return;
-    currentLetterRef.current = currentLetter;
+    if (lastRoundRef.current === round && hasAnnouncedRef.current) return;
+    lastRoundRef.current = round;
     hasAnnouncedRef.current = true;
 
     let cancelled = false;
@@ -41,5 +41,5 @@ export function useSpeech() {
       cancelSpeech();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase, state.currentLetter]);
+  }, [state.phase, state.round]);
 }

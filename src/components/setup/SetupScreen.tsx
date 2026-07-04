@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -7,7 +7,7 @@ import { Logo } from '@/components/ui/Logo';
 import { PlayerInput } from './PlayerInput';
 import { TimeSelector } from './TimeSelector';
 import { CategorySelector } from './CategorySelector';
-import { ThemeSelector, applyAccent } from './ThemeSelector';
+import { ThemeSelector } from './ThemeSelector';
 import { AccessibilitySelector } from './AccessibilitySelector';
 import type { Player, GameConfig, CategoryKey, Difficulty, AccentColor, ThemeOption, FontSize } from '@/types';
 import { loadSettings, saveSettings } from '@/services/storageService';
@@ -23,7 +23,7 @@ function createPlayer(name: string, index: number): Player {
 
 export function SetupScreen() {
   const { dispatch } = useGame();
-  const settings = loadSettings();
+  const [settings] = useState(() => loadSettings());
 
   const [players, setPlayers] = useState<Player[]>([
     createPlayer('Jogador 1', 0),
@@ -49,9 +49,6 @@ export function SetupScreen() {
   const [error, setError] = useState('');
 
   const speechSupported = isSpeechSupported();
-
-  // Aplicar cor de destaque ao montar
-  useEffect(() => { applyAccent(accent); }, [accent]);
 
   function handleAddPlayer() {
     if (players.length >= 8) return;
@@ -169,7 +166,7 @@ export function SetupScreen() {
             <div><h2 className="section-title">Opções</h2></div>
           </div>
           <div className="options-list">
-            <Toggle checked={noTimer} onChange={setNoTimer} label="Sem timer" description="Ideal para crianças pequenas" />
+            <Toggle checked={noTimer} onChange={(v) => { setNoTimer(v); if (v) setLightningMode(false); }} label="Sem timer" description="Ideal para crianças pequenas" />
             <div className="option-divider" />
             <Toggle checked={repeatLetters} onChange={setRepeatLetters} label="Repetir letras" description="Continua após esgotar o alfabeto" />
             <div className="option-divider" />
@@ -197,7 +194,10 @@ export function SetupScreen() {
             <div className="option-divider" />
             <Toggle checked={powerUpsEnabled} onChange={setPowerUpsEnabled} label="Power-ups" description="Dicas e tempo extra durante o jogo" />
             <div className="option-divider" />
-            <Toggle checked={lightningMode} onChange={setLightningMode} label="⚡ Modo relâmpago" description="Apenas 10 segundos por ronda" />
+            <Toggle checked={lightningMode} onChange={(v) => { setLightningMode(v); if (v) setNoTimer(false); }} label="⚡ Modo relâmpago" description="Apenas 10 segundos por ronda" />
+            {lightningMode && noTimer && (
+              <div className="option-warning">⚠️ O modo relâmpago e "Sem timer" são incompatíveis. O timer foi reactivado.</div>
+            )}
           </div>
         </Card>
 

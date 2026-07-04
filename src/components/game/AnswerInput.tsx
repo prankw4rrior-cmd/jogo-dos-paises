@@ -9,21 +9,25 @@ interface AnswerInputProps {
   currentLetter: string;
   currentCategory: CategoryKey;
   onValidAnswer: () => void;
+  onAnswer?: (answer: string, valid: boolean) => void;
 }
 
 type Status = 'idle' | 'listening' | 'submitted' | 'valid' | 'invalid';
 
-export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: AnswerInputProps) {
+export function AnswerInput({ currentLetter, currentCategory, onValidAnswer, onAnswer }: AnswerInputProps) {
   const [answer, setAnswer] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState('');
   const validatedRef = useRef(false);
 
+  const [feedbackType, setFeedbackType] = useState<'ok' | 'err' | 'info'>('info');
+
   useEffect(() => {
     setAnswer('');
     setStatus('idle');
     setFeedback('');
+    setFeedbackType('info');
     validatedRef.current = false;
   }, [currentLetter, currentCategory]);
 
@@ -44,15 +48,21 @@ export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: A
 
   function handleVote(valid: boolean) {
     if (validatedRef.current) return;
+    const trimmed = answer.trim();
     if (valid) {
       setStatus('valid');
-      setFeedback(`✓ "${answer.trim()}" aceite!`);
+      setFeedback(`✓ "${trimmed}" aceite!`);
+      setFeedbackType('ok');
       validatedRef.current = true;
       playPoint();
       onValidAnswer();
+      onAnswer?.(trimmed, true);
     } else {
-      setStatus('invalid');
-      setFeedback(`✗ "${answer.trim()}" não aceite.`);
+      setStatus('idle');
+      setAnswer('');
+      setFeedback('✗ Não aceite. Tenta outra palavra!');
+      setFeedbackType('err');
+      onAnswer?.(trimmed, false);
     }
   }
 
@@ -96,7 +106,7 @@ export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: A
   }
 
   const isSubmitted = status === 'submitted';
-  const isDone = status === 'valid' || status === 'invalid';
+  const isDone = status === 'valid'; // só bloqueia quando válido, não quando inválido
 
   const wrapperClass = status === 'valid' ? 'answer-valid'
     : status === 'invalid' ? 'answer-invalid'
@@ -165,7 +175,7 @@ export function AnswerInput({ currentLetter, currentCategory, onValidAnswer }: A
 
       {/* Feedback final */}
       {feedback && (
-        <div className={`answer-feedback ${status === 'valid' ? 'feedback-ok' : status === 'invalid' ? 'feedback-err' : 'feedback-info'}`}>
+        <div className={`answer-feedback feedback-${feedbackType}`}>
           {feedback}
         </div>
       )}

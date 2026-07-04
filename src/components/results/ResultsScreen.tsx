@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/Button';
 import { Podium } from './Podium';
@@ -24,24 +24,29 @@ export function ResultsScreen() {
     }
   }, []);
 
-  // Ordenar jogadores por pontuação decrescente
-  const ranked = [...config.players]
-    .map((p) => ({ player: p, score: scores[p.id] ?? 0 }))
-    .sort((a, b) => b.score - a.score);
+  // Ordenar jogadores por pontuação decrescente (memoizado para não recriar a cada render)
+  const ranked = useMemo(() => {
+    return [...config.players]
+      .map((p) => ({ player: p, score: scores[p.id] ?? 0 }))
+      .sort((a, b) => b.score - a.score);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.players, scores]);
 
   const winner = ranked[0];
+  const isTie = ranked.length > 1 && ranked[0].score === ranked[1].score;
 
-  // Anunciar vencedor uma só vez
+  // Anunciar vencedor uma só vez (independente de re-renders)
   useEffect(() => {
     if (announcedRef.current) return;
     announcedRef.current = true;
 
-    if (config.voiceEnabled && winner) {
+    if (config.voiceEnabled && winner && !isTie) {
       void announceWinner(winner.player.name);
     }
 
     return () => cancelSpeech();
-  }, [config.voiceEnabled, winner]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="results-screen">
@@ -61,9 +66,14 @@ export function ResultsScreen() {
         <div className="results-header animate-slide-up">
           <div className="results-trophy">🏆</div>
           <h1 className="results-title">Fim do Jogo!</h1>
-          {winner && (
+          {winner && !isTie && (
             <p className="results-winner-text animate-fade-in" style={{ animationDelay: '300ms' }}>
               Parabéns, <strong>{winner.player.name}</strong>!
+            </p>
+          )}
+          {isTie && (
+            <p className="results-winner-text animate-fade-in" style={{ animationDelay: '300ms' }}>
+              Empate entre <strong>{ranked.filter(r => r.score === winner.score).map(r => r.player.name).join(' e ')}</strong>!
             </p>
           )}
         </div>

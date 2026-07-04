@@ -162,9 +162,10 @@ export async function setPlayerAnswer(code: string, playerId: string, answer: Pl
 }
 
 export async function addScore(code: string, playerId: string, delta: number): Promise<void> {
-  const snapshot = await get(ref(db, `rooms/${code}/players/${playerId}/score`));
-  const current = (snapshot.val() as number) ?? 0;
-  await set(ref(db, `rooms/${code}/players/${playerId}/score`), Math.max(0, current + delta));
+  const { runTransaction } = await import('firebase/database');
+  await runTransaction(ref(db, `rooms/${code}/players/${playerId}/score`), (current) => {
+    return Math.max(0, (current ?? 0) + delta);
+  });
 }
 
 export async function sendChatEmoji(code: string, playerId: string, emoji: string): Promise<void> {
@@ -174,4 +175,9 @@ export async function sendChatEmoji(code: string, playerId: string, emoji: strin
 
 export async function deleteRoom(code: string): Promise<void> {
   await set(ref(db, `rooms/${code}`), null);
+}
+
+/** Remove um jogador da sala (quando não é o host a sair) */
+export async function removePlayerFromRoom(code: string, playerId: string): Promise<void> {
+  await set(ref(db, `rooms/${code}/players/${playerId}`), null);
 }

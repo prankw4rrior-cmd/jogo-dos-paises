@@ -4,8 +4,7 @@
   gap: 8px;
 }
 
-.power-ups > div:first-child,
-.power-ups {
+.power-ups-btns {
   display: flex;
   gap: 8px;
 }

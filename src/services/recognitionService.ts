@@ -24,6 +24,12 @@ export function startRecognition(
     return;
   }
 
+  // Parar qualquer reconhecimento anterior antes de iniciar novo
+  if (recognition) {
+    try { recognition.abort(); } catch { /* ignorar */ }
+    recognition = null;
+  }
+
   const SR = ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
   recognition = new SR();
   recognition.lang = 'pt-PT';
